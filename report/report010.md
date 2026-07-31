@@ -60,12 +60,16 @@ The test proves the first submitted value and second submitted value are distinc
 
 ## 7. Runtime State Consistency
 
-ApiServer and PlatformAppV0 were restarted from current debug binaries:
+ApiServer and PlatformAppV0 were restarted from current debug binaries after the expanded prompt010 test coverage:
 
-- ApiServer PID: 56976
+- ApiServer PID: 39192
+- ApiServer start time UTC: 2026-07-31T22:19:11.7898519Z
 - ApiServer path: `E:\Project2026\1ApiServer\ApiServer01\bin\Debug\net8.0\ApiServer01.exe`
-- PlatformAppV0 PID: 11464
+- ApiServer binary LastWriteTimeUtc: 2026-07-31T22:12:52.5770495Z
+- PlatformAppV0 PID: 33828
+- PlatformAppV0 start time UTC: 2026-07-31T22:19:13.8426545Z
 - PlatformAppV0 path: `E:\Project2026\PlatformAppV0\src\OBM.PlatformAppV0\bin\Debug\net8.0\OBM.PlatformAppV0.exe`
+- PlatformAppV0 binary LastWriteTimeUtc: 2026-07-31T22:11:27.5699176Z
 - PlatformAppV0 API base URL: `http://127.0.0.1:7161`
 
 Readiness probe:
@@ -101,6 +105,9 @@ The safe state matrix showed newer active records existed, so the failure was no
 Previous tests did not cover:
 
 - caller-supplied stale expiration during Pairing Code creation;
+- before-expiry versus at/after-expiry behavior;
+- local-timezone caller expiry being ignored in favor of server UTC;
+- fresh create request not returning an expired prior authorization record;
 - an old redeem request identity coexisting with a fresh code;
 - WPF retry after one failed code followed by a different operator input;
 - safe parsing of non-200 problem responses;
@@ -132,6 +139,7 @@ Implemented corrections:
 - WPF safely parses non-200 problem responses and reports safe resultCode instead of crashing on the wrong contract.
 - WPF adds visible prompt010 build labeling.
 - WPF records safe input diagnostics: present, length, and request-sent boolean.
+- Added API tests for before-expiry PASS, at/after-expiry EXPIRED, UTC/local mismatch regression, and fresh create not returning expired prior records.
 
 ## 12. Tests And Builds
 
@@ -144,7 +152,7 @@ Builds:
 
 Focused tests:
 
-- `dotnet test E:\Project2026\1ApiServer\ApiServer01.Tests\ApiServer01.Tests.csproj --filter "FullyQualifiedName~PlatformAppV0"` PASS: 18 passed.
+- `dotnet test E:\Project2026\1ApiServer\ApiServer01.Tests\ApiServer01.Tests.csproj --filter "FullyQualifiedName~PlatformAppV0"` PASS: 22 passed.
 - `dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0"` PASS: 23 passed.
 
 Existing unrelated warnings remain in the broader projects.
@@ -153,8 +161,12 @@ Existing unrelated warnings remain in the broader projects.
 
 Runtime evidence after restart:
 
-- ApiServer PID 56976 listening on 7161.
-- PlatformAppV0 PID 11464 listening on 7012.
+- ApiServer PID 39192 listening on 7161.
+- ApiServer start time UTC 2026-07-31T22:19:11.7898519Z.
+- ApiServer binary LastWriteTimeUtc 2026-07-31T22:12:52.5770495Z.
+- PlatformAppV0 PID 33828 listening on 7012.
+- PlatformAppV0 start time UTC 2026-07-31T22:19:13.8426545Z.
+- PlatformAppV0 binary LastWriteTimeUtc 2026-07-31T22:11:27.5699176Z.
 - Readiness HTTP 200 with `PLATFORM_V0_PHASE1_READY`.
 - PlatformAppV0 HTTPS root HTTP 200.
 - WPF protected hello endpoint HTTP 401 without token.
@@ -217,4 +229,6 @@ No WPF process was started in this task.
 
 ## 19. Coordination Commit
 
-This report is the only file intended for the coordination commit for prompt010.
+Initial report commit: `01eac678de3662c350d70d5682ea18fe58180faf`.
+
+This report update covers the expanded prompt010 requirements from commit `95ff75050af6f279322de8d10dfe88682db3dc4c`.
