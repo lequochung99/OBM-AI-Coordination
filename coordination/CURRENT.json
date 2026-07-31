@@ -6,7 +6,7 @@
   "currentReport": "reports/v002/REPORT-0002-publish-wpf-installation-v0-phase1-contract-v001.json",
   "currentHandoff": "handoffs/v002/HANDOFF-0002-platformappv0-phase1-current-state-v001.md",
   "latestManifest": "manifests/v001/coordination-manifest.json",
-  "status": "BLOCKED_CANONICAL_SOURCE_CONTRACT_MISSING",
+  "status": "WPF_INSTALLATION_V0_PHASE1_CONTRACT_PUBLISHED",
   "nextActor": "USER",
   "notes": [
     "Do not store secrets or customer data.",

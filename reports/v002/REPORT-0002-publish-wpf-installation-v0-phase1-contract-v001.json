@@ -3,25 +3,36 @@
   "reportId": "REPORT-0002-publish-wpf-installation-v0-phase1-contract",
   "reportVersion": "v001",
   "relatedPrompt": "prompts/v002/PROMPT-0002-publish-wpf-installation-v0-phase1-contract-v001.json",
-  "verdict": "BLOCKED_CANONICAL_SOURCE_CONTRACT_MISSING",
-  "summary": "The requested canonical local source document was not present at the exact path specified by the prompt. A nearby Phase 1-only contract was found but was not committed as a substitute because the prompt requires preserving the full two-phase canonical document without semantic edits.",
+  "verdict": "WPF_INSTALLATION_V0_PHASE1_CONTRACT_PUBLISHED",
+  "summary": "The canonical WPF InstallationV0 two-phase contract was published under contracts/v001 without semantic edits. The current PlatformAppV0 Phase 1 state was recorded, including the Google ID token unavailable administrator authorization failure and disabled Tenant/POS and Pairing Code actions.",
   "filesAdded": [
-    "handoffs/v002/HANDOFF-0002-platformappv0-phase1-current-state-v001.md",
-    "reports/v002/REPORT-0002-publish-wpf-installation-v0-phase1-contract-v001.json"
+    "contracts/v001/WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md"
   ],
   "filesChanged": [
+    "handoffs/v002/HANDOFF-0002-platformappv0-phase1-current-state-v001.md",
+    "reports/v002/REPORT-0002-publish-wpf-installation-v0-phase1-contract-v001.json",
     "coordination/CURRENT.json"
   ],
   "tests": [
     {
       "name": "Required canonical source path exists",
-      "result": "FAIL",
-      "evidence": "E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md was not found."
+      "result": "PASS",
+      "evidence": "E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md exists."
     },
     {
-      "name": "Nearby contract file classification",
+      "name": "Byte-for-byte contract preservation",
       "result": "PASS",
-      "evidence": "E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-PHASE1-CONTRACT.md exists but has 208 lines and is Phase 1-only, so it was not used."
+      "evidence": "Source and committed working-tree contract SHA-256 hashes match."
+    },
+    {
+      "name": "Line count observation",
+      "result": "WARNING",
+      "evidence": "PowerShell observed 782 lines, while the prompt acceptance text says 783 lines. No content was altered because byte-for-byte preservation is required."
+    },
+    {
+      "name": "Current-state handoff content",
+      "result": "PASS",
+      "evidence": "Handoff records Google login PASS, Google ID token unavailable administrator authorization failure, pending approved identity, disabled Tenant/POS action, disabled Pairing Code action, and Phase 1-only restriction."
     },
     {
       "name": "JSON validation",
@@ -35,16 +46,14 @@
     }
   ],
   "evidence": {
-    "requiredSourcePath": "E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
-    "requiredSourcePathExists": false,
-    "contractCommitted": false,
-    "contractDestinationPath": "contracts/v001/WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
-    "contractSha256": null,
-    "byteForByteMatch": false,
-    "byteForByteMatchExplanation": "The required source file was missing, so no contract file was committed. No alternate local file was substituted.",
-    "nearbyFileFoundButNotUsed": "E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-PHASE1-CONTRACT.md",
-    "nearbyFileLineCount": 208,
-    "nearbyFileSha256": "2E4F6C001F76B9B0AD01DB8E9028BBB1BF441DA919EA04037839856BB8EAFAF0",
+    "sourceContractPath": "E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
+    "publishedContractPath": "contracts/v001/WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
+    "sourceContractSha256": "B773FDB031DC5470FE2E6DC9DA0F3171238FD7B0FDC96DE745A7DA1B60F466CB",
+    "publishedContractSha256": "B773FDB031DC5470FE2E6DC9DA0F3171238FD7B0FDC96DE745A7DA1B60F466CB",
+    "byteForByteMatch": true,
+    "observedLineCount": 782,
+    "promptExpectedLineCount": 783,
+    "lineCountExplanation": "The local canonical source and published destination match byte-for-byte. No newline or semantic edit was introduced to force the prompt's stated 783-line expectation.",
     "currentStateRecorded": true,
     "currentStateNotes": [
       "Google login state PASS.",
@@ -57,13 +66,13 @@
     "secretsCommitted": false
   },
   "blockers": [
-    "Missing required canonical source document: E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
-    "Acceptance criterion requiring full 783-line two-phase contract cannot be satisfied from available local files."
+    "Platform administrator authorization is not complete.",
+    "Tenant/POS and Pairing Code creation remain disabled until administrator authorization passes."
   ],
   "risks": [
-    "Substituting the nearby Phase 1-only contract would violate the prompt requirement to preserve the full two-phase canonical document without semantic edits."
+    "Prompt expected 783 lines but the restored canonical local source has 782 lines by PowerShell count. The committed file matches the source byte-for-byte."
   ],
-  "nextRecommendedTask": "Restore or provide the required canonical full two-phase contract, then rerun the publish task.",
+  "nextRecommendedTask": "Fix or continue PlatformAppV0 Phase 1 administrator authorization so Tenant/POS and Pairing Code prerequisites can proceed.",
   "commitSha": "",
-  "status": "BLOCKED"
+  "status": "COMPLETED_WITH_PLATFORMAPPV0_AUTHORIZATION_BLOCKER"
 }
