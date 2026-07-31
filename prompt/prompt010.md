@@ -61,6 +61,53 @@ E:\Project2026\4POS\NailSalonNet8\InstallationV0
 E:\Project2026\4POS\NailSalonNet8.Tests\InstallationV0
 ```
 
+## WPF visible prompt label — bắt buộc từ prompt010 trở đi
+
+Mỗi prompt có sửa WPF/InstallationV0 phải cập nhật một label nhìn thấy rõ trên UI để operator biết chắc đang mở đúng binary mới nhất.
+
+Đối với task này, giá trị chính xác là:
+
+```text
+prompt010
+```
+
+Yêu cầu implementation:
+
+1. Tạo một constant duy nhất trong InstallationV0, ví dụ:
+
+```csharp
+public const string CoordinationPromptLabel = "prompt010";
+```
+
+2. Hiển thị chính xác `prompt010` ở ít nhất hai nơi:
+
+```text
+Window title: OBM InstallationV0 Phase 1 - prompt010
+Visible UI label gần tiêu đề: Build label: prompt010
+```
+
+3. Label phải lấy từ constant/code của binary đang chạy; không đọc từ file coordination GitHub tại runtime.
+4. Không dùng timestamp thay cho prompt label.
+5. Không được để label cũ như `prompt009` sau khi build prompt010.
+6. Thêm focused test xác nhận source/UI chứa chính xác label hiện tại và không còn label prompt trước trong active WPF title/header path.
+7. Report phải chụp/ghi evidence exact title/header text.
+
+Quy tắc lâu dài cho các prompt sau:
+
+```text
+Nếu prompt011 sửa WPF -> label = prompt011
+Nếu prompt012 sửa WPF -> label = prompt012
+...
+```
+
+Nếu một prompt không sửa WPF thì không bắt buộc đổi WPF label.
+
+Operator acceptance:
+
+```text
+Nếu UI không hiển thị đúng prompt number hiện tại, không được yêu cầu user test chức năng.
+```
+
 ## Điều tra bắt buộc
 
 Trace full lifecycle của một fresh Pairing Code:
@@ -170,6 +217,7 @@ Sau failed attempt, khi người dùng nhập code khác:
 - Không lưu Pairing Code vào checkpoint.
 - Không reset `LocalInstallationGuid` hoặc tạo attempt trùng không cần thiết.
 - Giữ protected hello, `/bootstrap/me`, expiration precision correction, DPAPI và restart/resume flow.
+- Giữ visible WPF label chính xác là `prompt010` trong title và UI.
 
 ## Tests bắt buộc
 
@@ -186,7 +234,9 @@ Bổ sung/duy trì tests cho:
 - WPF request DTO contains current input (assert internally, never print value);
 - expired response preserves safe correlation fields;
 - no DPAPI/checkpoint on expired response;
-- successful fresh redeem continues to protected hello and `/bootstrap/me`.
+- successful fresh redeem continues to protected hello and `/bootstrap/me`;
+- WPF title/header show exact label `prompt010`;
+- active WPF title/header path does not show stale `prompt009`.
 
 Build/test:
 
@@ -213,17 +263,27 @@ Cuối task:
 5. Không để WPF chạy nền.
 6. Không tự redeem real Pairing Code.
 7. Giao user chạy WPF Visual Studio Debug thủ công.
+8. Không yêu cầu user functional retest nếu WPF UI chưa hiển thị chính xác `Build label: prompt010`.
 
 ## Physical retest steps phải chuẩn bị
 
 1. User mở PlatformAppV0.
 2. Create a fresh Pairing Code.
 3. Ghi lại expiry trên UI, không gửi code vào report/chat.
-4. Mở WPF và nhập code ngay.
-5. Confirm fresh code no longer returns `PAIRING_CODE_EXPIRED`.
-6. Confirm protected hello marker PASS.
-7. Confirm `/bootstrap/me`, DPAPI, checkpoint PASS.
-8. Restart WPF cùng ProductRoot và confirm resume without second redeem.
+4. Mở WPF bằng Visual Studio Debug.
+5. Xác nhận trước tiên:
+
+```text
+Window title contains: prompt010
+Visible UI contains: Build label: prompt010
+```
+
+6. Nếu label không đúng, dừng test vì đang chạy stale binary.
+7. Nhập code mới ngay.
+8. Confirm fresh code no longer returns `PAIRING_CODE_EXPIRED`.
+9. Confirm protected hello marker PASS.
+10. Confirm `/bootstrap/me`, DPAPI, checkpoint PASS.
+11. Restart WPF cùng ProductRoot và confirm resume without second redeem.
 
 ## Git safety
 
@@ -256,10 +316,12 @@ Report phải có:
 11. Exact correction.
 12. Tests added and counts.
 13. Runtime instance evidence.
-14. Confirmation no raw code/token logged.
-15. Confirmation no DB/Phase 2.
-16. Exact user retest steps.
-17. Coordination commit SHA.
+14. Exact WPF prompt-label constant, window title và visible UI text.
+15. Confirmation stale prompt label is absent from active title/header path.
+16. Confirmation no raw code/token logged.
+17. Confirmation no DB/Phase 2.
+18. Exact user retest steps.
+19. Coordination commit SHA.
 
 ## Verdict hợp lệ
 
