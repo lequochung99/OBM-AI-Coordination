@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0",
+  "promptId": "PROMPT-0002-publish-wpf-installation-v0-phase1-contract",
+  "promptVersion": "v001",
+  "project": "OBM-POS InstallationV0 / PlatformAppV0",
+  "task": "Publish the canonical two-phase InstallationV0 contract and record the current Phase 1 PlatformAppV0 state",
+  "objective": "Commit the canonical WPF InstallationV0 two-phase contract to the OBM AI coordination repository, preserve the full document without semantic edits, and add a versioned current-state note showing that only Phase 1 is active and PlatformAppV0 cannot yet create a Pairing Code.",
+  "context": [
+    "Canonical local source document: E:\\Project2026\\CanonicalInstallationDocs\\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
+    "The contract defines exactly two phases, but current implementation work must focus only on Phase 1: API Authorization and Machine-Side Persistence.",
+    "Current PlatformAppV0 UI can complete Google login.",
+    "Current UI displays Google login state PASS.",
+    "Platform administrator authorization fails with: Google ID token unavailable from authenticated session.",
+    "Approved identity summary remains Pending administrator authorization.",
+    "Create/Select Tenant and POS1 remains disabled until administrator authorization passes.",
+    "Pairing Code creation remains disabled because administrator authorization and Tenant/POS prerequisites are incomplete.",
+    "Current draft Tenant Code is OBMDEVV0, Tenant Name is OBM Platform Installation V0, POS name is POS1, slot number is Pending."
+  ],
+  "constraints": [
+    "Do not implement Phase 2.",
+    "Do not modify PlatformAppV0, ApiServer01, or WPF source code in this task.",
+    "Do not alter the canonical contract semantics.",
+    "Do not remove the Phase 2 sections from the contract; preserve the full two-phase canonical document.",
+    "Clearly mark that execution is currently restricted to Phase 1.",
+    "Do not store secrets, tokens, Google ID tokens, credentials, connection strings, customer data, or private source code.",
+    "Do not overwrite or delete previous repository versions."
+  ],
+  "allowedPaths": [
+    "contracts/v001/WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md",
+    "handoffs/v002/HANDOFF-0002-platformappv0-phase1-current-state-v001.md",
+    "reports/v002/REPORT-0002-publish-wpf-installation-v0-phase1-contract-v001.json",
+    "coordination/CURRENT.json"
+  ],
+  "prohibitedActions": [
+    "No production or development database mutation",
+    "No pairing code generation",
+    "No OAuth or authentication configuration changes",
+    "No source-code implementation",
+    "No Phase 2 coding",
+    "No history rewrite or force push"
+  ],
+  "requiredEvidence": [
+    "Exact repository paths created",
+    "Commit SHA",
+    "SHA-256 checksum of the committed canonical contract",
+    "Confirmation that the committed contract matches the canonical local source file byte-for-byte or an explicit explanation of line-ending normalization",
+    "Confirmation that current-state handoff records the Google ID token unavailable failure and disabled Tenant/POS and Pairing Code actions",
+    "Confirmation that no secrets were committed"
+  ],
+  "acceptanceCriteria": [
+    "The full 783-line canonical two-phase contract is committed under contracts/v001 without semantic edits.",
+    "A versioned handoff records the exact current PlatformAppV0 Phase 1 UI state.",
+    "The handoff states that current work is Phase 1 only and Phase 2 must not start.",
+    "A versioned Codex report is committed.",
+    "coordination/CURRENT.json points to this prompt, report, and handoff.",
+    "All changes are committed and pushed to origin/main.",
+    "No secrets or private business data are present."
+  ],
+  "expectedReportPath": "reports/v002/REPORT-0002-publish-wpf-installation-v0-phase1-contract-v001.json",
+  "status": "READY_FOR_CODEX"
+}
