@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "1.0",
+  "promptId": "PROMPT-0003-audit-source-git-readiness",
+  "promptVersion": "v001",
+  "project": "OBM-POS InstallationV0 / PlatformAppV0 Phase 1",
+  "task": "Audit Git readiness for the three canonical source roots before any Phase 1 implementation work",
+  "objective": "Determine, without modifying source or Git history, whether each canonical source root is already a Git repository, which repository boundary owns it, whether a private remote exists, whether the working tree contains pre-existing changes, and whether local commit and remote push are safely available for future Codex implementation tasks.",
+  "context": [
+    "The coordination repository lequochung99/OBM-AI-Coordination is working and Codex can commit and push there.",
+    "That does not prove the three local source roots are Git repositories or have safe private remotes.",
+    "Current implementation scope is Phase 1 only.",
+    "Canonical source roots are Platform UI, Platform API, and WPF InstallationV0.",
+    "Do not begin fixing Google ID token, administrator authorization, Tenant/POS creation, Pairing Code creation, WpfJwt, or WPF redeem in this audit task."
+  ],
+  "sourceRoots": [
+    "E:\\Project2026\\PlatformAppV0",
+    "E:\\Project2026\\1ApiServer\\ApiServer01",
+    "E:\\Project2026\\4POS\\NailSalonNet8"
+  ],
+  "constraints": [
+    "Read-only audit only.",
+    "Do not edit source files.",
+    "Do not run git init.",
+    "Do not add, remove, or change remotes.",
+    "Do not stage files.",
+    "Do not commit.",
+    "Do not push.",
+    "Do not checkout, switch, create, delete, reset, rebase, merge, or force-update branches.",
+    "Do not clean the working tree.",
+    "Do not alter .gitignore, .gitattributes, submodules, worktrees, or repository configuration.",
+    "Do not expose credentials, tokens, remote embedded secrets, connection strings, customer data, or private source content in the report.",
+    "Redact any credential-bearing remote URL before reporting.",
+    "Do not implement Phase 2."
+  ],
+  "requiredChecksPerSourceRoot": [
+    "Does the path exist?",
+    "Is the path inside a Git worktree?",
+    "Exact Git top-level root from git rev-parse --show-toplevel",
+    "Whether multiple requested source roots belong to the same Git repository",
+    "Current branch or detached HEAD state",
+    "HEAD commit SHA",
+    "Configured remotes with credential-safe URLs",
+    "Whether origin exists",
+    "Remote provider and repository name if safely derivable",
+    "Remote visibility: Private, Public, or Unverified; do not guess",
+    "Upstream tracking branch",
+    "Ahead/behind counts where available without mutation",
+    "Working tree status using porcelain output summarized without dumping sensitive file contents",
+    "Count and categorized list of modified, added, deleted, renamed, untracked, ignored-not-required files",
+    "Whether changes predate this audit and therefore must be treated as user/unknown-owned",
+    "Presence of nested Git repositories, submodules, or worktrees relevant to the source boundary",
+    "Whether a local commit is technically possible, without creating one",
+    "Whether push permission is proven, not proven, or blocked; do not perform a write test",
+    "Any branch protection or repository-policy information available read-only",
+    "Recommended safe commit boundary for future Phase 1 work"
+  ],
+  "requiredCrossRootAnalysis": [
+    "State whether the three source roots are three separate repositories, fewer shared repositories, or not under Git.",
+    "Identify any parent repository that owns more than one source root.",
+    "Identify risk of accidentally committing unrelated project changes together.",
+    "Identify whether future Phase 1 work should produce one, two, or three source commit SHAs.",
+    "Do not recommend creating a new repository until existing boundaries are fully reported."
+  ],
+  "allowedPaths": [
+    "reports/v003/REPORT-0003-audit-source-git-readiness-v001.json",
+    "handoffs/v003/HANDOFF-0003-source-git-readiness-v001.md"
+  ],
+  "prohibitedActions": [
+    "No source file changes",
+    "No Git repository initialization",
+    "No remote configuration changes",
+    "No staging, commit, push, pull, fetch with credential prompts, merge, rebase, reset, checkout, switch, clean, stash, tag, or branch mutation",
+    "No PlatformAppV0/API/WPF implementation",
+    "No database access or mutation",
+    "No Phase 2 work"
+  ],
+  "requiredEvidence": [
+    "A per-root audit table with PathExists, IsGitWorktree, GitTopLevel, CurrentBranch, HeadSha, OriginPresent, SafeRemoteSummary, Visibility, Upstream, Ahead, Behind, WorkingTreeState, ChangeCounts, NestedRepoOrSubmoduleState, LocalCommitPossible, PushPermissionState, RecommendedBoundary.",
+    "Credential-safe command evidence or summarized outputs sufficient to support each conclusion.",
+    "Explicit statement that no source files or Git state were modified.",
+    "Explicit statement that no push write-test was performed.",
+    "Exact blockers and recommended next action for each root.",
+    "A cross-root conclusion specifying expected number of future source commit SHAs."
+  ],
+  "acceptanceCriteria": [
+    "All three canonical source roots are audited.",
+    "Repository ownership boundaries are unambiguous.",
+    "Pre-existing dirty working-tree changes are identified and treated as user/unknown-owned.",
+    "Remote existence and visibility are reported without guessing.",
+    "Push ability is classified as Proven, Not Proven, or Blocked without performing a mutation.",
+    "No source or Git state is changed.",
+    "A versioned report and handoff are committed and pushed only to the coordination repository.",
+    "The report is detailed enough to choose the safe Git setup before Phase 1 coding begins."
+  ],
+  "reportingPolicy": {
+    "attemptNumber": 1,
+    "firstAttemptMinimumCompletenessPercent": 80,
+    "ifNotPassOnAnyLaterAttempt": "Report must be 100% complete and detailed, including every acceptance criterion, root cause, exact evidence, unresolved ambiguity, risk, and next action."
+  },
+  "expectedReportPath": "reports/v003/REPORT-0003-audit-source-git-readiness-v001.json",
+  "expectedHandoffPath": "handoffs/v003/HANDOFF-0003-source-git-readiness-v001.md",
+  "status": "READY_FOR_CODEX"
+}
