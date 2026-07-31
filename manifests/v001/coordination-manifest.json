@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "manifestVersion": "v001",
+  "repository": "lequochung99/OBM-AI-Coordination",
+  "folders": {
+    "coordination": "Current manual coordination pointers and workflow diagram.",
+    "prompts": "Versioned ChatGPT-to-Codex prompt artifacts.",
+    "reports": "Versioned Codex report artifacts.",
+    "handoffs": "Versioned handoff summaries.",
+    "manifests": "Versioned repository coordination manifests.",
+    "diagrams": "Versioned Mermaid diagrams.",
+    "templates": "Reusable safe artifact templates."
+  },
+  "namingRules": {
+    "prompt": "PROMPT-<sequence>-<task-slug>-v<version>.json",
+    "report": "REPORT-<sequence>-<task-slug>-v<version>.json",
+    "handoff": "HANDOFF-<sequence>-<task-slug>-v<version>.md",
+    "versionFolders": "Use explicit version folders such as v001, v002, v003.",
+    "overwritePolicy": "Do not overwrite or delete previous versions automatically."
+  },
+  "securityRules": [
+    "Do not store secrets or customer data.",
+    "Do not store passwords, API keys, tokens, private keys, or real connection strings.",
+    "Do not store full OBM source code in this coordination repository.",
+    "Reference binary artifacts by path, artifact ID, version, commit SHA, checksum, or release URL rather than embedding them.",
+    "Use placeholders for protected values."
+  ],
+  "currentPointers": {
+    "currentPrompt": null,
+    "currentReport": null,
+    "currentHandoff": null,
+    "currentState": "coordination/CURRENT.json"
+  },
+  "createdBy": "Codex",
+  "status": "INITIALIZED"
+}

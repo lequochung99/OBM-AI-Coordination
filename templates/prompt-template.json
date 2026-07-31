@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "promptId": "",
+  "promptVersion": "",
+  "project": "",
+  "task": "",
+  "objective": "",
+  "context": [],
+  "constraints": [],
+  "allowedPaths": [],
+  "prohibitedActions": [],
+  "requiredEvidence": [],
+  "acceptanceCriteria": [],
+  "expectedReportPath": "",
+  "status": "DRAFT"
+}

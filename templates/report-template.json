@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "reportId": "",
+  "reportVersion": "",
+  "relatedPrompt": "",
+  "verdict": "",
+  "summary": "",
+  "filesAdded": [],
+  "filesChanged": [],
+  "tests": [],
+  "evidence": [],
+  "blockers": [],
+  "risks": [],
+  "nextRecommendedTask": "",
+  "commitSha": "",
+  "status": "DRAFT"
+}

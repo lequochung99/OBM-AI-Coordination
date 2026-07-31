@@ -1,0 +1,12 @@
+flowchart TD
+    A["User identifies task"] --> B["ChatGPT creates versioned prompt"]
+    B --> C["User notifies Codex"]
+    C --> D["Codex executes task"]
+    D --> E["Codex writes versioned report"]
+    E --> F["User notifies ChatGPT"]
+    F --> G["ChatGPT reviews evidence"]
+    G --> H{"Approved?"}
+    H -- "No" --> I["ChatGPT creates correction prompt"]
+    I --> C
+    H -- "Yes" --> J["Update CURRENT.json and prepare next prompt"]
+
