@@ -1,196 +1,160 @@
-# Report 052 - Activated Local Runtime vs API Bootstrap Repair Routing
+# Report 052 - Minimal Local DB Startup Service Cleanup
 
 ## 1. Verdict
 
-`BLOCKED_OBM_POS_LOCAL_RUNTIME_ROUTE_PRECEDENCE`
+`OBM_POS_MINIMAL_STARTUP_SERVICES_READY_FOR_USER_RETEST`
 
-Source was tightened for prompt052, but the physical ProductRoot currently does not contain the local runtime bootstrap files required by the normal startup router. Therefore the observed `BootstrapRepairRequired` branch is not proven to come from `WPF_HELLO_HTTP_401`; it is currently explained by missing local runtime bootstrap material.
+The normal WPF startup path now uses the configured local PostgreSQL route directly. API/session status remains post-MainWindow behavior and no longer drives the local startup decision.
 
-## 2. Physical Prompt051 Evidence
+## 2. Exact Misleading Names That Caused API/Local-DB Confusion
 
-Operator-provided prompt051 UI evidence showed:
+- `ApplicationStartupCoordinator`: mixed ProductRoot bootstrap-file discovery with normal runtime startup.
+- `BootstrapRepairRequired`: generic bootstrap wording made API/bootstrap-token and local database configuration look like one gate.
+- `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED`: surfaced a local/ProductRoot bootstrap diagnosis as a runtime route result.
+- `AppJwtBootstrapper`: named like a startup prerequisite even though it runs after MainWindow is visible.
+- `DatabaseStartupAssessmentService`: retained as compatibility, but the active normal path now uses `LocalPosStartupService`.
+- `InstallationV0CompletedReadinessService`: remains installation/audit-only and is not called by normal runtime startup.
 
-- Build label: `prompt051`
-- Phase 2 Local DB Baseline: `Phase 2 v002 Complete`
-- Local POS status: `Ready / Activated / LOCAL_POS_READY_ACTIVATED`
-- RuntimeState: `Activated`
-- API status: `Reauthorization Required / WPF_HELLO_HTTP_401`
-- Open OBM-POS result: `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED`
+## 3. Active Caller Inventory Before Cleanup
 
-Read-only ProductRoot file checks during prompt052 found:
+- `App` constructor could call configured DB assessment, but the fallback path still called `ApplicationStartupCoordinator`.
+- `OpenInstalledPosFromInstallationV0Async` used `RetryStartupAssessmentAsync`, which could call `ApplicationStartupCoordinator`.
+- `RouteFromAssessment` could emit `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED`.
+- `StartNormalApplicationAsync` already showed MainWindow before API auth/session initialization.
+- DI registered concrete `AppJwtBootstrapper` under `IAppJwtBootstrapper`.
 
-- `E:\Project2026\_dev\WpfInstallationV0Phase1\WpfProductRoot\Config\database-settings.json`: absent
-- `E:\Project2026\_dev\WpfInstallationV0Phase1\WpfProductRoot\Secrets\database-password.dpapi`: absent
+## 4. Deleted Services/Files/Result Codes/DI Registrations
 
-No secret file content was read.
+- Deleted active `ApplicationStartupCoordinator.CreateDefault().AssessAsync()` calls from `App.xaml.cs`.
+- Deleted active normal-runtime generation of `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED`; legacy state maps to `POS_RUNTIME_RECOVERY_REQUIRED` if it ever reaches the generic formatter.
+- Deleted concrete `AppJwtBootstrapper` DI registration from normal startup registration and replaced it with `ApiSessionInitializer`.
+- No source files were physically deleted in this bounded pass because compatibility callers/tests still reference old names.
 
-## 3. Exact Active Branch / Predicate Root Cause
+## 5. Renamed or Merged Services/Types
 
-Pre-change active branch:
+- Added `LocalPosStartupService` as the active normal local PostgreSQL startup service.
+- Kept `DatabaseStartupAssessmentService` as a compatibility subclass of `LocalPosStartupService`.
+- Added `IApiSessionInitializer` and renamed the active implementation class to `ApiSessionInitializer`.
+- Kept `IAppJwtBootstrapper` as a compatibility interface over the same API-session initializer.
 
-`App.OpenInstalledPosFromInstallationV0Async`
--> `RetryStartupAssessmentAsync`
--> `ApplicationStartupCoordinator.CreateDefault().AssessAsync()`
--> `RuntimeBootstrapLocator.Locate()`
--> `bootstrap is null && Directory.Exists(SpacePosConfigurationPaths.ProductRoot)`
--> `DatabaseStartupState.BootstrapRepairRequired`
--> `RouteFromAssessment`
--> `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED`
-
-Exact predicate:
-
-```csharp
-if (bootstrap is null && Directory.Exists(SpacePosConfigurationPaths.ProductRoot))
-```
-
-Exact technical summary:
+## 6. Final Minimal Normal-Startup Code Path
 
 ```text
-Product root exists, but the minimal database bootstrap locator could not be loaded.
+App builds runtime configuration
+-> resolves DatabaseProvider + configured connection string
+-> DevelopmentProfileLaunchPolicy approves ProductRoot/database lane
+-> LocalPosStartupService.AssessAsync(...)
+-> PostgreSQL authentication/schema/baseline/runtime profile/local identity checks
+-> CanEnterNormalApplication
+-> ShowMainWindowForActivatedRuntimeAsync
 ```
 
-## 4. Local-runtime Bootstrap vs API-bootstrap Distinction
+If no configured local PostgreSQL connection exists, the app returns `NewInstallationRequired`; it does not try ProductRoot bootstrap repair before MainWindow.
 
-Local runtime bootstrap means ProductRoot database metadata and protected PostgreSQL credential material required to open the local POS database.
+## 7. Final Installation-Only Verification Path
 
-API bootstrap means Phase 1 WpfJWT/protected hello/bootstrap identity material used for Platform API authorization.
+`InstallationV0CompletedReadinessService` remains outside ordinary normal startup. It is retained for installation diagnostics/audit proof and is not part of direct runtime entry or Open OBM-POS local readiness.
 
-Prompt052 source assertions now prove `WPF_HELLO_HTTP_401` is handled in `InstallationV0ApiCloudStatus` and is not present in `App.xaml.cs`, `ApplicationStartupCoordinator.cs`, or `RuntimeProfileStartupAssessmentService.cs`.
+## 8. Final Post-MainWindow API Path
 
-## 5. Corrected Route Precedence
+`StartNormalApplicationAsync` shows/activates MainWindow first. After that, it resolves `IApiSessionInitializer` and calls `StartAsync`. Exceptions are logged as `API_SESSION_DIAG` and local POS remains open/offline-deferred.
 
-The normal startup route remains local DB first:
+## 9. Runtime DB Username Proof (`hung`, Sanitized)
 
-1. ProductRoot/runtime database bootstrap.
-2. Protected PostgreSQL credential readback.
-3. PostgreSQL authentication.
-4. Schema/runtime profile/Tenant/POS identity.
-5. `TblPosRuntimeProfile.RuntimeState`.
-6. Local route decision.
-7. MainWindow transition.
-8. API/cloud state reported independently.
+`Properties/launchSettings.json` now configures both official WPF profiles with:
 
-## 6. Local Route + API State Composition Model
+```text
+Database=obm_pos_dev_v0_pg
+Username=hung
+Password source=Passfile path only
+```
 
-`PosStartupRouteResult` now carries:
+The file does not contain `Password=`.
 
-- `RouteDecision`
-- `ResultCode`
-- `RuntimeState`
-- `LocalRuntimeReady`
-- `ApiStatus`
-- `ApiResultCode`
-- MainWindow construction/show/visibility fields
+## 10. Open OBM-POS and Direct Startup Shared-Path Proof
 
-`ApiStatus=ReauthorizationRequired` can coexist with `RouteDecision=OpenMainPos` in the result model.
+Direct startup and `InstallationV0 -> Open OBM-POS` both call `LocalPosStartupService.AssessAsync(...)` through the same configured connection-string path. `OpenInstalledPosFromInstallationV0Async` calls `RetryStartupAssessmentAsync`, and that retry no longer calls `ApplicationStartupCoordinator`.
 
-## 7. MainWindow Transition Preservation
+## 11. Deletion/Rename Table
 
-The prompt051 MainWindow transition path was preserved:
+| Old name | Active purpose before | Final action | Final name or replacement |
+| --- | --- | --- | --- |
+| `ApplicationStartupCoordinator` | ProductRoot bootstrap locator fallback in normal startup | Active App caller removed | `LocalPosStartupService` |
+| `DatabaseStartupAssessmentService` | Normal local DB assessment | Compatibility shim retained | `LocalPosStartupService` |
+| `AppJwtBootstrapper` | Post-MainWindow API credential/session initialization | Active implementation renamed | `ApiSessionInitializer` |
+| `IAppJwtBootstrapper` | API credential/session contract | Compatibility interface retained | `IApiSessionInitializer` |
+| `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED` | Generic route code emitted from enum name | Active emission removed | `POS_RUNTIME_RECOVERY_REQUIRED` |
+| `InstallationV0CompletedReadinessService` | Installation completion/audit checks | Retained outside normal runtime | Installation/audit-only verifier |
 
-`ShowMainWindowForActivatedRuntimeAsync`
--> UI dispatcher
--> previous window/shutdown preservation
--> `ShutdownMode.OnExplicitShutdown`
--> resolve `MainWindow`
--> set `Application.Current.MainWindow`
--> `Show`
--> `Activate`
--> `IsVisible`
--> `ShutdownMode.OnMainWindowClose`
--> structured route result.
+## 12. Exact Source Files Added/Changed/Deleted
 
-## 8. Direct Runtime Behavior
+Changed locally in OBM source:
 
-No automatic WPF launch was performed. The source path still requires local runtime bootstrap before entering direct normal runtime. API 401 is not part of the direct local runtime predicate.
-
-## 9. Installation / Recovery Safeguards Retained
-
-Retained safeguards:
-
-- missing runtime bootstrap -> `BootstrapRepairRequired`
-- unreadable PostgreSQL credential -> `CredentialRecoveryRequired`
-- missing database -> `DatabaseRecoveryRequired`
-- missing runtime profile -> `ExistingDatabaseValidationRequired`
-- identity mismatch -> `RuntimeIdentityMismatch`
-- `Installing` -> `InstallationIncomplete`
-- `RecoveryRequired` -> recovery route
-- `Disabled` -> recovery/blocked route
-
-## 10. No-mutation Proof
-
-No WPF launch was performed. No Pairing Code was redeemed. No token was refreshed or rotated. No PostgreSQL write/migration/seed/marker/runtime-history/outbox/PIN/role/password mutation was performed. No User or Machine environment variable was set.
-
-## 11. Exact Source Files Changed
-
-Local OBM source changes only:
-
+- `E:\Project2026\4POS\NailSalonNet8\App.xaml.cs`
+- `E:\Project2026\4POS\NailSalonNet8\ConnectService\AppJwtBootstrapper.cs`
+- `E:\Project2026\4POS\NailSalonNet8\ConnectService\IAppJwtBootstrapper.cs`
+- `E:\Project2026\4POS\NailSalonNet8\Services\Startup\DatabaseStartupAssessmentService.cs`
 - `E:\Project2026\4POS\NailSalonNet8\InstallationV0\Application\InstallationV0BuildInfo.cs`
 - `E:\Project2026\4POS\NailSalonNet8\InstallationV0\Application\PosStartupRouteResult.cs`
 - `E:\Project2026\4POS\NailSalonNet8\InstallationV0\InstallationV0Module.cs`
 - `E:\Project2026\4POS\NailSalonNet8\InstallationV0\Presentation\InstallationV0Window.cs`
+- `E:\Project2026\4POS\NailSalonNet8\Properties\launchSettings.json`
 - `E:\Project2026\4POS\NailSalonNet8.Tests\InstallationV0\InstallationV0Phase1Tests.cs`
 
-No OBM source commit or push was performed.
+Deleted files: none.
 
-## 12. Build / Test Commands and Counts
-
-Commands run:
+## 13. Build/Test Commands and Counts
 
 ```text
 dotnet build E:\Project2026\4POS\NailSalonNet8\InstallationV0\InstallationV0.csproj -v minimal
-dotnet build E:\Project2026\4POS\NailSalonNet8\NailSalonNet8.csproj -v minimal
-dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0|FullyQualifiedName~Startup|FullyQualifiedName~OpenObmPos|FullyQualifiedName~RuntimeState|FullyQualifiedName~MainWindow|FullyQualifiedName~Offline|FullyQualifiedName~BootstrapRepair" -v minimal
 ```
 
-Results:
+Result: passed, 0 warnings, 0 errors.
 
-- InstallationV0 build: 0 warnings, 0 errors
-- WPF build: 176 warnings, 0 errors
-- Focused tests: 145 passed, 0 failed, 0 skipped
+```text
+dotnet build E:\Project2026\4POS\NailSalonNet8\NailSalonNet8.csproj -v minimal
+```
 
-The first WPF build attempt hit a transient file lock because it was run in parallel with the InstallationV0 build; the serial rerun passed.
+Result: passed, 176 warnings, 0 errors.
 
-## 13. Prompt052 Label Proof
+```text
+dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0|FullyQualifiedName~Startup|FullyQualifiedName~OpenObmPos|FullyQualifiedName~MainWindow|FullyQualifiedName~Offline|FullyQualifiedName~Database" -v minimal
+```
 
-`InstallationV0BuildInfo.CoordinationPromptLabel` is now:
+Result: passed, 176 passed, 0 failed, 0 skipped.
+
+## 14. Prompt052 Label Proof
+
+`InstallationV0BuildInfo.CoordinationPromptLabel` is:
 
 ```text
 prompt052
 ```
 
-Window title remains:
+The window title format remains:
 
 ```text
-OBM InstallationV0 Phase 1/2 - {InstallationV0BuildInfo.CoordinationPromptLabel}
+OBM InstallationV0 Phase 1/2 - prompt052
 ```
 
-## 14. Exact Operator Retest Steps
+## 15. Operator Physical Retest Steps
 
-1. Rebuild from Visual Studio or `dotnet build`.
-2. Launch InstallationV0 V0 ProductRoot lane.
-3. Confirm build label `prompt052`.
-4. Confirm route diagnostics include separate `ApiStatus` and `ApiResultCode`.
-5. If ProductRoot runtime bootstrap files are still absent, expect `BootstrapRepairRequired`.
-6. After approved ProductRoot runtime bootstrap materialization/repair, retry Open OBM-POS with API still 401; expected route is `OpenMainPos`.
+1. Open Visual Studio.
+2. Select `OBM-POS Runtime Development` or `OBM-POS InstallationV0 Phase1`.
+3. Confirm the launch profile targets ProductRoot `E:\Project2026\_dev\WpfInstallationV0Phase1\WpfProductRoot`.
+4. Start WPF.
+5. With local PostgreSQL ready as `obm_pos_dev_v0_pg` / role `hung`, verify MainWindow opens.
+6. Keep API unavailable or returning 401 and verify MainWindow still opens while API/session is offline or reauthorization-required.
+7. From InstallationV0, click `Open OBM-POS` once and verify it uses the same local DB startup path.
 
-## 15. Deferred Refresh-token / PIN / Identity Cleanup
+## 16. No Secrets/No DB Mutation/No Source Push Proof
 
-Deferred and not performed:
+No password, token, cookie, Pairing Code, ClientSecret, protected credential, or full connection string with password was printed.
 
-- WpfJWT refresh/rotation
-- Pairing Code reauthorization
-- employee PIN work
-- Platform identity cleanup
-- ProductRoot bootstrap repair/materialization
+No PostgreSQL database was created, dropped, migrated, seeded, or modified. No Pairing Code was redeemed. No WPF process was launched automatically. No OBM source commit or push was performed.
 
-## 16. No Secrets / No DB Mutation / No Source Push Proof
-
-No password, token, cookie, ClientSecret, connection string with credential, Pairing Code, or protected credential was printed or persisted in this report.
-
-The only pushed artifact for this task is this coordination report. OBM source edits remain local and uncommitted.
+Only this coordination report is committed and pushed.
 
 ## 17. Coordination Commit SHA
 
-Commit containing this report: recorded in the final Codex response after `origin/main` push.
-
+Commit containing this report: recorded in final Codex response after push to `origin/main`.
