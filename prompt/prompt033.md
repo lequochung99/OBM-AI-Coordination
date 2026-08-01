@@ -1,4 +1,43 @@
-# Prompt 033 — Fix Phase 2 v002 employee-permission FK mapping
+# Prompt 033 — Seed `TblEmployeePermission` before `TblEmployee` and fix the employee FK
+
+## Operator-confirmed hard dependency
+
+The operator confirms the canonical dependency:
+
+```text
+TblEmployeePermission
+        ↓ parent must exist first
+TblEmployee
+```
+
+This is no longer an open design question.
+
+**Hard rule:** before inserting even one `TblEmployee` row, the executor must first seed or adopt every required `TblEmployeePermission` parent row and build an authoritative mapping from `PermissionName` to the actual target `EmployeePermissionGuid`.
+
+Required execution order inside the same PostgreSQL transaction:
+
+```text
+1. Determine all permission labels required by the selected reference employees.
+2. Seed/adopt TblEmployeePermission rows first.
+3. Save/verify permission parents while remaining inside the same transaction.
+4. Build PermissionName -> actual target EmployeePermissionGuid map.
+5. Validate every employee has exactly one resolved parent.
+6. Only then insert/adopt TblEmployee rows.
+7. Insert required permission and employee TblLocalOutbox rows.
+8. Verify runtime profile/history.
+9. Write the v002 completion marker last.
+10. Commit once.
+```
+
+Multiple `SaveChangesAsync()` calls are allowed, but they must share:
+
+```text
+one DbContext/connection
+one PostgreSQL transaction
+one final COMMIT
+```
+
+Do not calculate an employee permission FK independently from the employee row when the parent exists or is inserted in this transaction.
 
 ## Physical evidence
 
@@ -22,20 +61,11 @@ Constraint=FK_TblEmployee_Permission
 
 The v002 employee transaction was blocked before commit.
 
-Do not ask the operator to insert permission rows manually and do not repair the target database outside the InstallationV0 seed path.
-
-## Likely fault classes — verify, do not assume
-
-The failure can be caused by one or both of these conditions:
-
-1. The v001 target contains only the three permission rows `Owner`, `Admin`, and `Sub_Manager`, while the 20 selected reference employees require additional permission parents such as `Staff`, `Manager`, `AI_Assistant`, and `VirtualAnyTechnician`.
-2. The employee transform derives an `EmployeePermissionGuid` independently instead of resolving the actual target parent row by stable key, so it may reference a GUID that does not match an existing compatible permission row.
-
-Prompt033 must identify the exact condition and correct both classes safely.
+Do not ask the operator to insert permission rows manually. The correction must be part of the InstallationV0 seed flow so a clean database can reproduce the same result.
 
 ## First requirement — prove rollback/no partial commit
 
-Before source correction, inspect `obm_pos_dev_v0_pg` read-only as role `hung` and record sanitized counts/state:
+Inspect `obm_pos_dev_v0_pg` read-only as role `hung` and record sanitized state:
 
 ```text
 TblEmployee
@@ -47,11 +77,11 @@ TblPosRuntimeProfile
 TblPosRuntimeStateHistory
 ```
 
-Expected state if rollback succeeded:
+Expected rollback state:
 
 ```text
 TblEmployee = 0
-TblEmployeePermission = 3 unless prior manual/test rows exist
+TblEmployeePermission = 3 unless previous approved rows exist
 TblLocalOutbox = 21
 v001 marker = 1
 v002 marker = 0
@@ -59,7 +89,7 @@ TblPosRuntimeProfile = 1, RuntimeState Activated
 TblPosRuntimeStateHistory = 1
 ```
 
-If any v002 employee, employee outbox, runtime-history, or marker row committed, stop with:
+If any v002 employee, employee outbox, runtime-history transition, or v002 marker committed, stop with:
 
 ```text
 BLOCKED_PHASE2_V002_PARTIAL_COMMIT_DETECTED
@@ -73,7 +103,7 @@ Inspect PostgreSQL metadata and EF/entity configuration for:
 
 ```text
 dbo.TblEmployee
-constraint FK_TblEmployee_Permission
+FK_TblEmployee_Permission
 dbo.TblEmployeePermission
 ```
 
@@ -87,13 +117,21 @@ nullable/non-null
 ON DELETE/ON UPDATE behavior
 ```
 
-Do not report employee names, PINs, contacts, payroll values, or raw employee rows.
+Do not report employee names, PINs, contacts, payroll values, or raw rows.
 
-## Required permission-parent set
+## Required permission parent set
 
-Read the reference employees in `enailsalon_phasee1_pos1_pg` through a read-only transaction and collect only the distinct safe permission labels used by the selected 20 employees.
+Read selected employees from `enailsalon_phasee1_pos1_pg` through:
 
-Expected reference distribution from report030 includes:
+```text
+BEGIN TRANSACTION READ ONLY
+SELECT-only queries
+ROLLBACK
+```
+
+Collect only distinct safe permission labels required by those employees.
+
+Expected labels from the current reference distribution are:
 
 ```text
 Owner
@@ -105,36 +143,13 @@ AI_Assistant
 VirtualAnyTechnician
 ```
 
-Do not hard-code this list without verifying it against the current reference selection. The final parent set must be the distinct permission stable keys actually required by the selected employee rows.
+Verify the current reference selection rather than blindly forcing the list.
 
-## Parent-before-child correction
+The final parent set is the distinct `PermissionName` set actually used by the selected employee rows.
 
-The v002 executor must perform this order inside the same target transaction:
+## Permission-first implementation
 
-```text
-1. Resolve all required TblEmployeePermission parents by TenantGuid + PermissionName.
-2. Adopt compatible existing parent rows and use their actual EmployeePermissionGuid.
-3. Insert missing permission parent rows before TblEmployee.
-4. Build one authoritative in-transaction map:
-   PermissionName -> actual target EmployeePermissionGuid.
-5. Validate every selected employee resolves to exactly one parent.
-6. Insert/adopt TblEmployee using the resolved actual parent GUID.
-7. Insert matching deterministic outbox rows.
-8. Verify runtime profile/history.
-9. Write the unchanged v002 marker last.
-```
-
-Hard rule:
-
-```text
-Never derive an employee FK independently when a compatible parent already exists.
-```
-
-The employee FK must come from the target parent row selected or inserted in the current transaction.
-
-## Permission-row behavior
-
-Stable key:
+Stable key for permission parents:
 
 ```text
 TenantGuid + PermissionName
@@ -143,104 +158,197 @@ TenantGuid + PermissionName
 For each required permission:
 
 ```text
-absent -> insert deterministic permission row
-compatible existing -> adopt and use actual existing GUID
-same stable key but incompatible role/type -> rollback PHASE2_PERMISSION_BASELINE_CONFLICT
-duplicate target rows for one stable key -> rollback PHASE2_PERMISSION_DUPLICATE_PARENT
+absent
+→ insert deterministic TblEmployeePermission row
+
+compatible existing
+→ adopt it and use its actual EmployeePermissionGuid
+
+same stable key but incompatible role/default
+→ rollback PHASE2_PERMISSION_BASELINE_CONFLICT
+
+duplicate target rows for one stable key
+→ rollback PHASE2_PERMISSION_DUPLICATE_PARENT
 ```
 
-Do not delete extra permissions outside the selected v002 set.
-
-Preserve only safe role/default fields. Do not attach employee PINs, private identities, or payroll information to permission rows.
-
-## Permission outbox policy
-
-Reuse the proven baseline save/outbox behavior:
-
-- newly inserted/materially updated `TblEmployeePermission` rows receive deterministic `TblLocalOutbox` rows;
-- compatible no-op adopted rows do not duplicate an existing baseline outbox event;
-- if policy requires an event and the compatible adopted row lacks the deterministic baseline event, add it in the same transaction;
-- payload contains only safe permission configuration.
-
-All permission rows, permission outbox rows, employee rows, employee outbox rows, runtime-state work, and v002 marker must use one target transaction.
-
-## Expected physical delta for the current known target
-
-Use these values only as an acceptance expectation after verifying current counts:
+After permission parents are inserted/adopted, execute an in-transaction readback and create exactly one authoritative map:
 
 ```text
-Required distinct permission parents: 7
-Existing compatible permission parents: 3
-Missing permission parents: 4
-Employee rows to insert: 20
-Expected first-run outbox delta: 24
-  4 permission parent outbox rows
-  20 employee outbox rows
-RuntimeStateHistory delta: 0 because profile is already Activated
-v002 marker delta: 1
+PermissionName -> actual target EmployeePermissionGuid
 ```
 
-If current verified target/reference counts differ, report and use the actual deterministic counts instead of forcing these numbers.
+Before inserting employees, validate:
 
-## Existing employee transform safeguards
+```text
+every selected employee permission label exists in the map
+no employee resolves to zero parents
+no employee resolves to multiple parents
+all mapped parent GUIDs physically exist in TblEmployeePermission
+```
 
-Keep all prompt032 corrections:
+Failure result:
 
-- `LoginNumber` respects `varchar(20)`;
-- display fields use schema-aware deterministic shortening;
-- private/contact/security/payroll values remain reset or excluded;
-- employee GUIDs remain deterministic and independent of shortened display text;
-- PostgreSQL exceptions expose only safe schema/table/constraint metadata.
+```text
+PHASE2_EMPLOYEE_PERMISSION_PARENT_MISSING
+```
 
-Do not change the v002 marker version:
+## Employee insertion rule
+
+Only after permission verification succeeds may `TblEmployee` rows be inserted/adopted.
+
+Each employee must use:
+
+```text
+EmployeePermissionGuid = actual GUID from the permission map
+```
+
+Never use:
+
+```text
+reference EmployeePermissionGuid
+an independently derived permission GUID
+a GUID calculated from employee identity
+a parent GUID that was not read back from the target transaction
+```
+
+Employee behavior remains:
+
+```text
+absent stable employee key -> insert transformed row
+compatible existing employee -> adopt/verify
+incompatible stable identity/type/permission -> rollback PHASE2_EMPLOYEE_BASELINE_CONFLICT
+extra target employees outside v002 -> preserve
+```
+
+## Dependency/order acceptance gate
+
+Tests and source inspection must prove this exact order:
+
+```text
+TblTenant
+→ TblEmployeePermission
+→ TblEmployee
+→ required TblLocalOutbox rows
+→ runtime profile/history verification
+→ v002 marker last
+```
+
+No SQL statement that inserts `TblEmployee` may appear before permission parent resolution and verification.
+
+## Permission and employee outbox policy
+
+Reuse the proven legacy save/outbox behavior.
+
+For permission rows actually inserted or materially updated:
+
+```text
+insert matching deterministic TblLocalOutbox row
+EntityType = TblEmployeePermission
+Operation = I or U
+TenantGuid = Phase 1 TenantGuid
+SourceClientId = Phase 1 POS source identity
+payload = safe permission configuration only
+```
+
+For employee rows actually inserted or materially updated:
+
+```text
+insert matching deterministic TblLocalOutbox row
+EntityType = TblEmployee
+Operation = I or U
+payload excludes PIN/contact/payroll/private fields
+```
+
+Compatible no-op replay must not duplicate outbox rows.
+
+All permission rows, employees, outbox rows, runtime-state work, and v002 marker must share one target transaction.
+
+## Expected current physical delta
+
+Use these as expectations only after verifying actual target/reference counts:
+
+```text
+Required permission parents: 7
+Existing compatible parents: 3
+Missing permission parents: 4
+Employees to insert: 20
+
+Expected TblEmployeePermission delta: +4
+Expected TblEmployee delta: +20
+Expected TblLocalOutbox delta: +24
+  4 permission events
+  20 employee events
+Expected TblPosRuntimeStateHistory delta: 0
+Expected v002 marker delta: +1
+```
+
+If verified counts differ, use actual deterministic counts and explain why.
+
+## Preserve prompt032 text-length corrections
+
+Keep all prompt032 safeguards:
+
+- `TblEmployee.LoginNumber` respects `varchar(20)`;
+- display text uses schema-aware deterministic shortening;
+- employee GUIDs do not depend on shortened display text;
+- private/contact/security/payroll fields remain reset or excluded;
+- exceptions expose only safe SQLSTATE/schema/table/column/constraint metadata.
+
+Do not change the marker version:
 
 ```text
 phase2-reference-driven-trial-v002-employees
 ```
 
-Because no v002 marker has committed, this is a correction to the same immutable logical upgrade, not a new production version.
+No v002 marker has committed, so this remains a correction to the same logical upgrade.
 
-Store correction notes in a new preserved trial folder, for example:
+Store notes in a new preserved folder, for example:
 
 ```text
 InstallationV0\Phase2\Trials\reference-driven-v002-employees-r2\
 ```
 
-Do not overwrite prior trial folders.
+Do not overwrite prior trial versions.
 
-## Runtime-state behavior
+## Runtime state behavior
 
-Keep prompt031 policy unchanged:
+Keep prompt031 policy:
 
 ```text
-TblPosRuntimeProfile = current runtime source of truth
-TblPosRuntimeStateHistory = append only on a real state transition
-Phase2TrialCompletionMarker = immutable seed completion proof
+TblPosRuntimeProfile = current state source of truth
+TblPosRuntimeStateHistory = append only on a real transition
+Phase2TrialCompletionMarker = immutable upgrade completion proof
 ```
 
-Current profile is `Activated`, so the corrected first execution should verify it and produce:
+Current profile is already `Activated`, therefore the corrected physical run should verify it and produce:
 
 ```text
 TblPosRuntimeStateHistory delta = 0
 ```
 
-## One transaction and failure behavior
+## One atomic transaction
 
-Use one `NpgsqlConnection` and one serializable transaction:
+Use one `NpgsqlConnection` and one serializable target transaction:
 
 ```text
 BEGIN
-  verify target and V008 rollback anchor
-  advisory transaction lock
+  verify target = obm_pos_dev_v0_pg Development
+  verify V008 rollback anchor
+  acquire advisory transaction lock
   verify v001 marker
   read reference employees/permissions through separate read-only connection
-  resolve/insert permission parents
-  insert/adopt employees using actual parent GUIDs
+
+  seed/adopt TblEmployeePermission parents
+  SaveChanges/readback inside same transaction
+  build and validate permission GUID map
+
+  insert/adopt TblEmployee using actual mapped parent GUIDs
   insert permission and employee outbox rows
+
   verify runtime profile/history
   verify excluded runtime/business tables unchanged
   write v002 marker last
-  read back FK/invariants
+  read back FK and row-count invariants
 COMMIT
 ```
 
@@ -255,34 +363,11 @@ runtime profile/history changes
 v002 marker
 ```
 
-Preserve v001 data/marker and Phase 1 checkpoint.
-
-## UI and operator behavior
-
-The explicit action remains:
-
-```text
-Install Local Database Baseline
-```
-
-Do not auto-run on startup.
-
-After success show safe counts:
-
-```text
-Permission parents inserted/adopted
-Employees inserted/adopted
-Outbox delta
-Runtime state/history delta
-Marker last
-Transaction committed
-```
-
-On FK/preflight failure show a safe result code, not raw employee data.
+Preserve v001 data/marker and the Phase 1 checkpoint.
 
 ## Same-version replay
 
-A second execution must prove:
+Second execution must prove:
 
 ```text
 TblEmployeePermission delta = 0
@@ -293,6 +378,30 @@ TblPosRuntimeStateHistory delta = 0
 v002 marker delta = 0
 ```
 
+## UI behavior
+
+Keep the explicit operator action:
+
+```text
+Install Local Database Baseline
+```
+
+Do not auto-run during startup.
+
+After success show safe counts:
+
+```text
+Permission parents inserted/adopted
+Employees inserted/adopted
+Outbox delta
+Runtime profile state
+Runtime history delta
+Marker last
+Transaction committed
+```
+
+Do not show employee names, PINs, contacts, payroll data, or raw GUID maps.
+
 ## WPF label
 
 Because source changes, set:
@@ -302,25 +411,25 @@ Build label: prompt033
 Window title: OBM InstallationV0 Phase 1/2 - prompt033
 ```
 
-Focused tests must prove prompt032/prompt031 are absent from the active title/build-info path.
+Tests must prove prompt032/prompt031 are absent from the active label path.
 
 ## Required tests
 
-Add focused tests for:
+Add focused tests proving:
 
 ```text
-actual FK metadata/contract represented correctly
-required permission set derived from selected employees
-parent permissions inserted before employees
-existing parent GUID is adopted and used by employee FK
-missing permission parent inserted and mapped
+FK metadata/contract represented correctly
+required permission labels derived from selected employees
+TblEmployeePermission inserts occur before TblEmployee inserts
+existing permission parent actual GUID is adopted
+missing permission parents are inserted before employees
+permission map is read back from target transaction
 all employee FK values resolve before insert
-duplicate/missing/incompatible parent fails closed
-permission outbox mapping
-employee outbox mapping
+missing/duplicate/incompatible parents fail closed
+permission and employee outbox mapping
 one transaction and marker last
 rollback after permission or employee failure
-prompt032 varchar safeguards retained
+prompt032 varchar safeguards remain
 runtime history no-op while already Activated
 same-version replay zero delta
 prompt033 label
@@ -336,7 +445,7 @@ dotnet build E:\Project2026\4POS\NailSalonNet8\NailSalonNet8.csproj
 dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0"
 ```
 
-Do not automatically perform the physical WPF retry. Leave it for the operator after build/tests pass.
+Do not perform the physical WPF retry automatically. Leave it for the operator after build/tests pass.
 
 ## Report 033
 
@@ -349,26 +458,25 @@ report/report033.md
 Required sections:
 
 1. Verdict.
-2. Physical 23503 evidence.
+2. Physical `23503` evidence.
 3. Post-failure rollback proof.
 4. Exact FK child/parent metadata.
-5. Exact root cause: missing parents, wrong GUID mapping, or both.
-6. Required distinct permission-parent set, sanitized.
+5. Exact root cause.
+6. Verified required permission-parent set.
 7. Existing/adopted/inserted permission counts.
-8. Parent-to-employee GUID mapping design.
-9. Permission and employee outbox policy.
-10. One-transaction/marker-last proof.
-11. Runtime profile/history behavior.
-12. Expected physical first-run deltas.
-13. Same-version replay policy.
-14. Source files changed.
-15. Build/test commands and counts.
-16. Prompt033 label proof.
-17. No reference mutation/no secret leakage/no source push.
-18. Exact operator retest steps.
-19. Coordination commit SHA.
-
-Do not print employee names, PINs, contacts, payroll values, raw GUID maps, or private row dumps.
+8. Proof `TblEmployeePermission` is seeded before `TblEmployee`.
+9. Actual parent-GUID mapping design.
+10. Permission and employee outbox policy.
+11. One-transaction/marker-last proof.
+12. Runtime profile/history behavior.
+13. Expected first-run deltas.
+14. Same-version replay policy.
+15. Source files changed.
+16. Build/test commands and counts.
+17. Prompt033 label proof.
+18. No reference mutation/no secret leakage/no source push.
+19. Exact operator retest steps.
+20. Coordination commit SHA.
 
 ## Valid verdicts
 
