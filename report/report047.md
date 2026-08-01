@@ -140,7 +140,7 @@ Results:
 
 ## 14. Read-only DB evidence
 
-Read-only PostgreSQL verification used protected local configuration without printing secrets. The SQL session used `BEGIN READ ONLY` and did not run migrations, seeds, updates, deletes, inserts, grants, or schema changes.
+Read-only PostgreSQL verification used protected local configuration without printing secrets. The final SQL session used `BEGIN TRANSACTION READ ONLY` followed by `ROLLBACK` and did not run migrations, seeds, updates, deletes, inserts, grants, or schema changes.
 
 Observed safe evidence:
 
