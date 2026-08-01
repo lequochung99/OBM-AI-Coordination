@@ -1,4 +1,56 @@
-# Prompt 037 — Reconcile Phase 1 identity with TblPosRuntimeProfile before v002 seed
+# Prompt 037 — Lock the Phase 1 → Phase 2 identity spine and repair runtime-profile mismatch
+
+## Operator-confirmed canonical identity spine
+
+The following rule is authoritative and must be implemented exactly:
+
+```text
+Durable Phase 1 checkpoint / protected bootstrap identity
+        ↓ materialize, never invent
+TblTenant
+        ↓
+TblPosLocal
+        ↓
+TblPosRuntimeProfile
+        ↓
+Phase 2 completion marker context
+```
+
+Phase 2 must **never invent, substitute, infer, or independently derive** a Tenant/POS installation identity.
+
+The durable Phase 1 proof is the only authority for:
+
+```text
+TenantGuid
+TenantCode
+TenantName
+PosGuid
+PosStationId
+PosName
+PosSlot
+InstallationAttemptGuid / InstallationGuid as represented by the contract
+PosDeviceGuid / device identity as represented by the contract
+LocalInstallationGuid
+SourceClientId
+EnvironmentName
+DatabaseName
+```
+
+The required invariant before a Phase 2 marker can be written is:
+
+```text
+Phase 1 checkpoint/bootstrap Tenant/POS identity
+=
+TblTenant current local identity
+=
+TblPosLocal current local POS identity
+=
+TblPosRuntimeProfile current runtime identity
+=
+Phase 2 marker Tenant/POS/installation context
+```
+
+If any identity differs, Phase 2 must fail closed and must not write a pass marker.
 
 ## Physical evidence
 
@@ -17,11 +69,11 @@ The operator physically retested build `prompt036` and received:
 PHASE2_RUNTIME_PROFILE_IDENTITY_MISMATCH
 ```
 
-The v002 permission/employee transaction was blocked before commit.
+Do not manually edit `TblTenant`, `TblPosLocal`, `TblPosRuntimeProfile`, `TblPosRuntimeStateHistory`, or marker rows in pgAdmin.
 
-Do not manually edit `TblPosRuntimeProfile`, `TblPosRuntimeStateHistory`, `TblTenant`, or `TblPosLocal` in pgAdmin. The correction must be part of the InstallationV0 path so a clean database can reproduce it.
+The correction must be part of InstallationV0 so a clean database can reproduce it.
 
-## Current known state
+## Current known target state
 
 Approved target:
 
@@ -30,7 +82,7 @@ obm_pos_dev_v0_pg
 Environment = Development
 ```
 
-Known pre-v002 state from prior reports:
+Known pre-v002 state:
 
 ```text
 TblEmployeePermission = 3
@@ -43,12 +95,12 @@ RuntimeState = Activated
 TblPosRuntimeStateHistory = 1
 ```
 
-Prompt036 already fixed SQL syntax. Preserve all prior corrections:
+Preserve all prior corrections:
 
-- full 7-row permission reconciliation;
-- permission parents before employees;
+- PostgreSQL syntax fix from prompt036;
+- all 7 permission defaults reconciled before employees;
 - actual target permission GUID readback;
-- 20 employee rows;
+- 20 reference-driven employee rows;
 - `LoginNumber` varchar(20) safeguard;
 - one target transaction;
 - deterministic outbox;
@@ -60,16 +112,18 @@ Prompt036 already fixed SQL syntax. Preserve all prior corrections:
 Inspect the target read-only as role `hung` and record sanitized counts/state:
 
 ```text
+TblTenant
+TblPosLocal
+TblPosRuntimeProfile
+TblPosRuntimeStateHistory
 TblEmployeePermission
 TblEmployee
 TblLocalOutbox
 v001 marker
 v002 marker
-TblPosRuntimeProfile
-TblPosRuntimeStateHistory
 ```
 
-If any v002 permission, employee, outbox, runtime transition, or marker row committed, stop with:
+If any v002 permission, employee, outbox, runtime transition, runtime-profile rebind, or v002 marker committed from the failed attempt, stop with:
 
 ```text
 BLOCKED_PHASE2_V002_PARTIAL_COMMIT_DETECTED
@@ -77,85 +131,196 @@ BLOCKED_PHASE2_V002_PARTIAL_COMMIT_DETECTED
 
 Do not clean up manually.
 
-## Exact identity audit
+## Phase 1 durable identity proof
 
-Compare these identity sources field by field:
+Read Phase 1 identity only through the existing authorized checkpoint/protected bootstrap path.
 
-### A. Current Phase 1 authorized identity
-
-Read only from the existing Phase 1 checkpoint / protected bootstrap identity path:
+Required fields:
 
 ```text
 TenantGuid
 TenantCode
+TenantName
 PosGuid
+PosStationId
 PosName
 PosSlot
-InstallationGuid / InstallationAttemptGuid as represented
-PosDeviceGuid / device registration identity as represented
+InstallationAttemptGuid / InstallationGuid
+PosDeviceGuid / device registration identity
 LocalInstallationGuid
 SourceClientId
 EnvironmentName
 DatabaseName
 ```
 
-Do not print tokens, Pairing Codes, secrets, or protected credential material.
-
-### B. TblPosRuntimeProfile current row
-
-Read safely:
+Revalidate with the protected API contract when the credential is still valid:
 
 ```text
-RuntimeProfileGuid / singleton key
+GET protected hello
+GET /bootstrap/me
+```
+
+Do not redeem another Pairing Code automatically.
+
+Do not print tokens, Pairing Codes, protected credential content, or private identifiers unnecessarily.
+
+## Materialization contract
+
+### TblTenant
+
+`TblTenant` must contain exactly one current compatible row for the Phase 1 tenant identity used by this installation.
+
+Required equality:
+
+```text
+TblTenant.TenantGuid = Phase1.TenantGuid
+TblTenant.TenantCode = Phase1.TenantCode
+TblTenant tenant display/name field = Phase1.TenantName
+```
+
+Behavior:
+
+```text
+missing current row
+→ insert from Phase 1 identity
+
+compatible current row
+→ adopt/verify
+
+same stable tenant key with incompatible identity
+→ fail PHASE2_TENANT_IDENTITY_CONFLICT
+```
+
+Do not delete unrelated legacy tenant rows in prompt037.
+
+### TblPosLocal
+
+`TblPosLocal` must materialize the authorized Phase 1 POS identity.
+
+Required equality, according to the physical schema/model:
+
+```text
+TblPosLocal.TenantGuid = Phase1.TenantGuid
+TblPosLocal.PosGuid = Phase1.PosGuid
+TblPosLocal.PosStationId = Phase1.PosStationId
+TblPosLocal.PosName = Phase1.PosName
+TblPosLocal slot = Phase1.PosSlot
+```
+
+Behavior:
+
+```text
+missing current POS row
+→ insert from Phase 1 identity
+
+compatible current POS row
+→ adopt/verify
+
+same station/slot with incompatible PosGuid/TenantGuid
+→ fail PHASE2_POS_IDENTITY_CONFLICT
+```
+
+Do not invent a new POS GUID or silently choose a different slot.
+
+### TblPosRuntimeProfile
+
+`TblPosRuntimeProfile` is the current runtime-state source of truth.
+
+It must point to the same Phase 1/TblTenant/TblPosLocal identity:
+
+```text
 TenantGuid
 TenantCode
 PosGuid
 PosDeviceGuid
-InstallationGuid
-DeviceRegistrationId
+InstallationGuid / DeviceRegistrationId as represented
 SourceClientId
 DatabaseName
 EnvironmentName
-ProfileVersion
-SchemaVersion
-BaselineVersion
-AppVersion
-RuntimeState
-RecoveryReasonCode
 ```
 
-### C. Current target identity rows
+Canonical post-install state:
 
-Inspect `TblTenant`, `TblPosLocal`, current v001 marker identity, and any canonical local POS identity/config files.
+```text
+RuntimeState = Activated
+```
 
-Report only sanitized identity classifications and mismatch field names; do not publish raw private identifiers unnecessarily.
+`InstalledHealthy` remains a startup assessment result, not a runtime-state enum value.
+
+Preserve the existing `RuntimeProfileGuid`/singleton identity when performing a safe rebind.
+
+### Phase 2 marker
+
+The v002 marker remains:
+
+```text
+phase2-reference-driven-trial-v002-employees
+```
+
+The marker must carry or be verifiably associated with the same:
+
+```text
+TenantGuid
+PosGuid
+Installation/LocalInstallation context as supported by the marker schema
+```
+
+The marker may be inserted only after all identity-spine equality checks pass and all seed/runtime invariants pass.
+
+## Identity-spine cross-check
+
+Create one explicit in-memory comparison result before seed mutation:
+
+```text
+Phase1Identity
+LocalTenantIdentity
+LocalPosIdentity
+RuntimeProfileIdentity
+ExistingMarkerIdentity
+```
+
+Compare field by field and report only safe field names/categories.
+
+Required pre-marker check:
+
+```text
+Phase1.TenantGuid == TblTenant.TenantGuid
+Phase1.TenantCode == TblTenant.TenantCode
+Phase1.TenantName == TblTenant tenant name
+Phase1.PosGuid == TblPosLocal.PosGuid
+Phase1.PosStationId == TblPosLocal.PosStationId
+Phase1.PosName == TblPosLocal.PosName
+Phase1.PosSlot == TblPosLocal slot
+Phase1 tenant/POS/device/install identity == TblPosRuntimeProfile identity
+Phase1 tenant/POS identity == marker context
+```
+
+If any check fails after permitted reconciliation:
+
+```text
+PHASE2_IDENTITY_SPINE_MISMATCH
+```
+
+No v002 marker may be written.
 
 ## Mismatch classification
 
-Classify the physical mismatch into exactly one category:
+Classify the current physical mismatch into one exact category:
 
 ```text
-A. Formatting/nullable normalization mismatch only
-B. Runtime profile points to an older Development tenant/POS identity while current Phase 1 identity rows also exist
-C. Runtime profile identity is truly conflicting with current Phase 1 identity and target business/runtime data
-D. Phase 1 checkpoint identity is inconsistent with the v001 marker or target database identity
+A. Formatting/nullable normalization only
+B. Missing Phase 1 TblTenant/TblPosLocal materialization
+C. Runtime profile points to an older Development identity while correct Phase 1 local parent rows exist
+D. TblTenant/TblPosLocal themselves conflict with Phase 1
+E. Existing v001 marker context conflicts with current Phase 1
+F. Business/runtime data makes rebind unsafe
 ```
 
-Do not assume category B without proving it.
+Do not assume category C without proof.
 
-## Target identity inventory and legacy-state audit
+## Legacy identity/dependent-data audit
 
-The target has previously shown more than one `TblTenant` / `TblPosLocal` row in some evidence. Audit exact current counts and relationships:
-
-```text
-TblTenant identities
-TblPosLocal identities
-TblPosRuntimeProfile identity
-v001 marker identity
-Phase 1 identity
-```
-
-For each extra/legacy identity, determine whether any dependent business/runtime data exists:
+Audit extra/legacy identities and whether dependent rows exist in:
 
 ```text
 TblInvoice*
@@ -170,88 +335,52 @@ employee/service data
 TblLocalOutbox ownership
 ```
 
-Do not delete legacy rows in prompt037. The purpose is to decide whether a controlled runtime-profile rebind is safe.
+Do not delete legacy rows in prompt037.
 
-## Safe controlled rebind gate
+## Safe repair gate
 
-A runtime-profile identity rebind is allowed only when all of the following are proven:
+Identity materialization/rebind is allowed only when all are proven:
 
 ```text
 target database exactly obm_pos_dev_v0_pg
 Environment exactly Development
 V008 pre-v002 backup anchor valid
-v001 marker belongs to the current Phase 1 tenant/POS identity
+current durable Phase 1 identity revalidated
+v001 marker belongs to or can be safely reconciled to the current Phase 1 identity
 v002 marker absent
-exactly one TblPosRuntimeProfile row exists
-current profile state is Activated or Installing
-current Phase 1 TblTenant/TblPosLocal parents exist and are compatible
-no operational/business rows are tied to the legacy runtime-profile identity
-no production/reference/protected database is involved
+exactly one current TblPosRuntimeProfile row
+RuntimeState is Activated or Installing
+no operational/business rows are tied to a conflicting legacy identity
+no production/reference/protected database involved
 ```
 
-If any gate fails, stop with:
+If unsafe:
 
 ```text
-BLOCKED_PHASE2_RUNTIME_PROFILE_REBIND_UNSAFE
+BLOCKED_PHASE2_IDENTITY_SPINE_REPAIR_UNSAFE
 ```
 
-Do not overwrite identity blindly.
+## Controlled repair behavior
 
-## Controlled rebind behavior
+Within the same transaction:
 
-When the safe gate passes, preserve the existing runtime profile row identity/key and update only the canonical identity/configuration fields that are meant to follow the active installation:
+1. Materialize/adopt `TblTenant` from Phase 1.
+2. Materialize/adopt `TblPosLocal` from Phase 1.
+3. Preserve `RuntimeProfileGuid` and safely align `TblPosRuntimeProfile` to Phase 1/local parent identity.
+4. Read back all three and verify the identity spine.
+5. Only after identity equality succeeds, continue permission/employee seed.
+
+Do not blindly overwrite identity.
+
+Do not change `RuntimeState` when it is already `Activated`.
+
+If `Installing -> Activated` is a real allowed transition, append one runtime-history row. An identity-only rebind with state unchanged must produce:
 
 ```text
-TenantGuid
-TenantCode
-PosGuid
-PosDeviceGuid
-InstallationGuid / device registration fields as defined by the current model
-SourceClientId
-DatabaseName
-EnvironmentName
-ProfileVersion / BaselineVersion / AppVersion only if canonical source requires update
-RecoveryReasonCode cleared only if model semantics allow
-UpdatedAt / equivalent timestamp
+TblPosRuntimeStateHistory delta = 0
 ```
 
-Do not guess field mappings. Use existing `PosRuntimeProfileRecord`, repository, startup assessment, and provisioning code as the contract.
-
-Preserve:
-
-```text
-RuntimeProfileGuid / singleton identity
-current RuntimeState unless a real canonical state transition is required
-created timestamp/history identity
-unrelated rollout/update fields
-```
-
-The target row after rebind must match current Phase 1 Tenant/POS/device/installation identity exactly according to the model.
-
-## Runtime history policy
-
-`TblPosRuntimeStateHistory` is append-only state-transition history.
-
-Default rule:
-
-```text
-identity-only rebind while RuntimeState remains Activated
-→ do not append a duplicate/same-state history row
-```
-
-Append history only if the authoritative runtime-state contract requires a real transition such as `Installing -> Activated`.
-
-Do not manufacture a fake transition merely to create an audit row.
-
-If the codebase has a separate identity-change audit path, use it; otherwise report the rebind through the v002 transaction result and marker evidence.
-
-Expected current history delta after a safe identity-only rebind:
-
-```text
-0
-```
-
-## Transaction order
+## One atomic transaction
 
 Use one target `NpgsqlConnection` and one serializable transaction:
 
@@ -259,19 +388,23 @@ Use one target `NpgsqlConnection` and one serializable transaction:
 BEGIN
   verify target and V008 backup anchor
   acquire advisory transaction lock
-  verify v001 marker/current Phase 1 identity
-  audit current runtime profile identity
-  safely rebind TblPosRuntimeProfile when allowed
-  read back and verify runtime profile identity
+  revalidate durable Phase 1 identity
+
+  materialize/adopt TblTenant from Phase 1
+  materialize/adopt TblPosLocal from Phase 1
+  safely align TblPosRuntimeProfile
+  read back and verify the full identity spine
 
   reconcile all 7 TblEmployeePermission defaults
-  read back actual permission GUID map
+  read back actual PermissionName -> EmployeePermissionGuid map
   insert/adopt 20 TblEmployee rows
   insert permission/employee TblLocalOutbox rows
 
   verify RuntimeState = Activated
-  verify runtime history policy
+  verify runtime-history policy
   verify excluded business/runtime tables unchanged
+
+  verify marker context equals Phase 1/Tenant/POS/runtime identity
   write v002 marker last
   read back all invariants
 COMMIT
@@ -280,45 +413,56 @@ COMMIT
 Any error must rollback:
 
 ```text
-runtime profile rebind
+TblTenant/TblPosLocal materialization changes
+runtime-profile identity repair
 permission rows/outbox
 employee rows/outbox
-runtime history changes
+runtime-history changes
 v002 marker
 ```
 
-Preserve v001 data/marker and Phase 1 checkpoint.
+Preserve the durable Phase 1 checkpoint and v001 completed data.
 
-## Existing/legacy TblTenant and TblPosLocal rows
+## Marker hard gate
 
-Do not delete old tenant/POS rows in prompt037.
+Immediately before marker insert, execute an explicit identity-spine assertion.
 
-After the runtime profile is aligned, report whether extra legacy rows remain and whether they should be handled in a later cleanup/versioned migration.
-
-The current action should ensure all startup/source-of-truth paths select the current Phase 1 identity through `TblPosRuntimeProfile` and current marker/configuration.
-
-## Expected physical delta if safe rebind is needed
-
-Expected from the current known target, subject to verified facts:
+Marker insert is forbidden unless:
 
 ```text
-TblPosRuntimeProfile row count delta = 0
-TblPosRuntimeProfile updated rows = 1
-TblPosRuntimeStateHistory delta = 0
+IdentitySpineVerified = true
+RuntimeState = Activated
+Permission parents complete = true
+Employee FK validation = true
+Outbox invariants = true
+Excluded runtime/business deltas = 0
+```
+
+Tests must prove marker SQL is unreachable when identity equality fails.
+
+## Expected physical delta
+
+Subject to verified facts:
+
+```text
+TblTenant/TblPosLocal data delta = 0 when compatible rows already exist
+TblPosRuntimeProfile row-count delta = 0
+TblPosRuntimeProfile update delta = 0 or 1
+TblPosRuntimeStateHistory delta = 0 for identity-only repair
 TblEmployeePermission inserted = 4
 TblEmployeePermission adopted = 3
 TblEmployee inserted = 20
-TblLocalOutbox delta = 24 plus any proven permission updates
+TblLocalOutbox delta = 24 plus proven safe permission updates
 v002 marker delta = 1
 ```
 
-If the runtime profile already matches after normalization, profile update delta should be 0.
-
 ## Same-version replay
 
-After first successful v002 execution, replay must produce:
+After first success:
 
 ```text
+TblTenant delta = 0
+TblPosLocal delta = 0
 TblPosRuntimeProfile delta = 0
 TblPosRuntimeStateHistory delta = 0
 TblEmployeePermission delta = 0
@@ -329,59 +473,67 @@ v002 marker delta = 0
 
 ## UI behavior
 
-Keep explicit action:
+Keep explicit operator action:
 
 ```text
 Install Local Database Baseline
 ```
 
-Do not auto-run on startup.
+Do not auto-run.
 
-After success show safe proof:
+After success display safe proof:
 
 ```text
-Runtime profile identity aligned
+Phase 1 identity revalidated
+TblTenant identity verified
+TblPosLocal identity verified
+TblPosRuntimeProfile identity verified
+Identity spine verified
 RuntimeState Activated
 Permission parents reconciled
 Employees inserted/adopted
 Outbox delta
 Runtime history delta
+Marker context verified
 Marker last
 Transaction committed
 ```
 
-On mismatch failure show safe field names/categories, not raw secrets or private IDs.
+On failure show safe mismatched field names/categories, never secrets/raw identifiers.
 
 ## WPF label
 
-Because source changes are expected, set:
+Because source changes are expected:
 
 ```text
 Build label: prompt037
 Window title: OBM InstallationV0 Phase 1/2 - prompt037
 ```
 
-If investigation proves no source correction is needed, keep `prompt036` and explain why. Do not change label for report-only work.
+If no source correction is needed, keep `prompt036` and explain why.
 
 ## Required tests
 
 Add focused tests for:
 
 ```text
-Phase 1 identity versus runtime profile field comparison
-normalization-only match
-legacy Development identity mismatch classification
-safe rebind gate
+Phase 1 is the only identity authority
+TblTenant materialization from Phase 1
+TblPosLocal materialization from Phase 1
+no independently invented TenantGuid/PosGuid
+runtime profile equality with local parent rows
+v001/marker context equality
+normalization-only identity match
+safe identity repair gate
 unsafe business-data gate
 preserve RuntimeProfileGuid
-update only canonical identity fields
 no fake runtime-history transition
-readback identity verification before permission/employee insert
-rollback restores old runtime profile on later failure
-permission/employee behavior from prompt036 preserved
-marker last
+identity readback before permission/employee insert
+marker unreachable on identity mismatch
+rollback restores old identity rows/profile on later failure
+all prompt036 permission/employee behavior preserved
 same-version zero delta
-prompt037 label when source changes
+prompt037 label
 ```
 
 Run:
@@ -394,7 +546,7 @@ dotnet build E:\Project2026\4POS\NailSalonNet8\NailSalonNet8.csproj
 dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0"
 ```
 
-Do not run the final physical WPF seed automatically. Leave operator retest after source/build/test completion.
+Do not run the final physical WPF seed automatically.
 
 ## Report 037
 
@@ -409,40 +561,41 @@ Required sections:
 1. Verdict.
 2. Physical runtime-profile identity mismatch evidence.
 3. Post-failure rollback proof.
-4. Phase 1 identity field inventory, sanitized.
-5. Runtime profile identity field inventory, sanitized.
-6. Exact mismatched field names and classification.
-7. TblTenant/TblPosLocal/marker identity inventory.
-8. Legacy identity dependent-data audit.
-9. Safe/unsafe rebind decision.
-10. Runtime profile field update mapping.
-11. Runtime history policy/delta.
-12. Transaction and rollback proof.
-13. Permission/employee/outbox behavior preserved.
-14. Expected physical deltas.
-15. Same-version replay policy.
-16. Remaining legacy identity cleanup recommendation.
-17. Source files changed.
-18. Build/test counts.
-19. Active label proof.
-20. No reference mutation/no secret leakage/no source push.
-21. Exact operator retest steps.
-22. Coordination commit SHA.
+4. Durable Phase 1 identity inventory, sanitized.
+5. TblTenant identity inventory and materialization decision.
+6. TblPosLocal identity inventory and materialization decision.
+7. TblPosRuntimeProfile identity inventory.
+8. Existing marker identity context.
+9. Exact mismatched field names/classification.
+10. Legacy dependent-data audit.
+11. Safe/unsafe repair decision.
+12. Full identity-spine equality proof.
+13. Runtime profile update mapping/history policy.
+14. Transaction/rollback/marker hard-gate proof.
+15. Permission/employee/outbox behavior preserved.
+16. Expected physical deltas.
+17. Same-version replay policy.
+18. Source files changed.
+19. Build/test counts.
+20. Active label proof.
+21. No reference mutation/no secret leakage/no source push.
+22. Exact operator retest steps.
+23. Coordination commit SHA.
 
 ## Valid verdicts
 
 ```text
-PHASE2_V002_RUNTIME_PROFILE_IDENTITY_REBIND_READY_FOR_USER_RETEST
+PHASE2_V002_IDENTITY_SPINE_REPAIR_READY_FOR_USER_RETEST
 ```
 
 ```text
-PHASE2_V002_RUNTIME_PROFILE_NORMALIZATION_FIX_READY_FOR_USER_RETEST
+PHASE2_V002_IDENTITY_SPINE_ALREADY_VALID_READY_FOR_USER_RETEST
 ```
 
 ```text
-BLOCKED_PHASE2_RUNTIME_PROFILE_REBIND_UNSAFE
+BLOCKED_PHASE2_IDENTITY_SPINE_REPAIR_UNSAFE
 ```
 
 ```text
-BLOCKED_PHASE2_RUNTIME_PROFILE_IDENTITY_FIX
+BLOCKED_PHASE2_IDENTITY_SPINE_FIX
 ```
