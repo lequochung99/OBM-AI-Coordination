@@ -1,25 +1,39 @@
-# Prompt 052 — Prioritize Activated local runtime over API bootstrap repair routing
+# Prompt 052 — Remove API/bootstrap repair from normal POS startup; local PostgreSQL is authoritative
 
-## Physical operator evidence
+## Operator correction — authoritative and intentionally simple
 
-Read completely before changing source:
+The previous prompts began adding too many status and route layers again.
+
+For normal OBM-POS operation, the rule is simple:
 
 ```text
-report/report049.md
-report/report050.md
-report/report051.md
-report/report044.md
-E:\Project2026\CanonicalInstallationDocs\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md
+1. Resolve the configured local PostgreSQL database.
+2. Connect successfully using the runtime PostgreSQL role:
+   Username = hung
+   Password = the protected valid PostgreSQL password.
+3. Verify the local schema is usable.
+4. Open MainWindow.
 ```
 
-The operator physically rebuilt and ran build `prompt051`.
+OBM-POS does **not** have an application-user password requirement for startup.
 
-The diagnostics UI proves the local POS is fully ready:
+Employee `LoginNumber` is an operational PIN for local UI gating and audit attribution. It is not a startup credential.
+
+API authentication is independent:
 
 ```text
-Build label: prompt051
-Phase 2 Local DB Baseline: Phase 2 v002 Complete
-Local POS status: Ready / Activated / LOCAL_POS_READY_ACTIVATED
+API token valid
+-> API/sync online
+
+API token expired, HTTP 401, or API unavailable
+-> MainWindow still opens
+-> local PostgreSQL CRUD continues
+-> API/sync is Offline or Reauthorization Required
+```
+
+The current physical build `prompt051` already proves:
+
+```text
 LocalDatabaseConfigResolved=True
 LocalDatabaseAuthenticationSucceeded=True
 SchemaReady=True
@@ -28,339 +42,310 @@ RuntimeState=Activated
 TenantIdentityConsistent=True
 PosIdentityConsistent=True
 LocalPosReady=True
-API status: Reauthorization Required / WPF_HELLO_HTTP_401
-ProtectedCredentialPresent=True
-ProtectedCredentialReadable=True
-AccessCredentialAccepted=False
-ApiReachable=True
 ```
 
-The operator clicked `Open OBM-POS` once.
-
-The structured result now correctly exposed the real blocking route:
+Yet `Open OBM-POS` returns:
 
 ```text
-Open OBM-POS state: Failed
-StageId=InstallationV0OpenObmPos
-ResultCode=POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED
+POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED
 ```
 
-No MainWindow became visible.
+That result is incorrect for a usable local database. Do not add another override layer. Remove the incorrect dependency.
 
-This evidence is authoritative and proves:
+## Read first
 
 ```text
-- prompt051 structured-result preservation works;
-- local DB authentication succeeds;
-- schema is ready;
-- runtime profile is Activated;
-- local Tenant/POS identity is consistent;
-- LocalPosReady=True;
-- API credential is unauthorized/expired;
-- the startup router still gives API/bootstrap-repair state higher priority than the ready local POS state.
+report/report044.md
+report/report045.md
+report/report049.md
+report/report050.md
+report/report051.md
+E:\Project2026\CanonicalInstallationDocs\WPF-INSTALLATION-V0-TWO-PHASE-CONTRACT.md
 ```
 
-## Operator decision — canonical route precedence
+## Exact objective
 
-The local POS working route is authoritative once durable local installation is complete.
-
-Canonical precedence:
+For the current installed database:
 
 ```text
-1. Local DB/config/auth/schema/runtime identity
-2. TblPosRuntimeProfile.RuntimeState
-3. Local route decision
-4. API/cloud credential state after MainWindow is visible
+Database = obm_pos_dev_v0_pg
+Runtime PostgreSQL role = hung
+PostgreSQL authentication = successful
+Schema = usable
 ```
 
-For this exact physical state:
+the only valid local startup result is:
 
 ```text
-LocalPosReady=True
-RuntimeState=Activated
-API status=ReauthorizationRequired
+OPEN_POS_MAINWINDOW_SHOWN
 ```
 
-The only valid route is:
+The following must never block MainWindow after local DB readiness succeeds:
 
 ```text
-RouteDecision=OpenMainPos
-ResultCode=OPEN_POS_MAINWINDOW_SHOWN
-API status remains ReauthorizationRequired or OfflineDeferred
-```
-
-`BootstrapRepairRequired` may be relevant only when local runtime bootstrap needed to access PostgreSQL is missing, corrupt, unreadable, or inconsistent. It must not be used when the only failed item is the Phase 1/API protected credential.
-
-## Critical terminology distinction
-
-Audit and separate two concepts that may currently share the word `bootstrap`:
-
-### Local database/runtime bootstrap
-
-Examples:
-
-```text
-ProductRoot local runtime metadata
-DatabaseHost
-DatabasePort
-DatabaseName
-DatabaseUsername
-protected PostgreSQL password reference
-local Tenant/POS/runtime identity
-```
-
-Failure here may legitimately block local POS startup.
-
-### API/cloud bootstrap credential
-
-Examples:
-
-```text
-Phase 1 WpfJwt
-protected hello credential
-WPF_HELLO_HTTP_401
-Pairing Code reauthorization
-API bootstrap identity proof
-```
-
-Failure here must become:
-
-```text
-ApiStatus=ReauthorizationRequired
-or
-ApiStatus=OfflineDeferred
-```
-
-It must not route an already Activated local POS to installation/bootstrap repair.
-
-Rename ambiguous result codes/classes/comments where necessary so future AI/developers cannot confuse these two domains.
-
-## Objective
-
-Correct the canonical router so:
-
-```text
-LocalPosReady=True
-+ RuntimeState=Activated
-+ local DB bootstrap usable
-=> OpenMainPos
-```
-
-independent of:
-
-```text
-WpfJwt expired
+WpfJwt expiration
 protected hello HTTP 401
-API unavailable
-Pairing Code absent
-API reauthorization required
+API reachability
+Pairing Code absence
+API bootstrap repair
+API reauthorization requirement
+Phase1 current-token status
+employee operational PIN state
+exact employee/permission/outbox counts
+launch provenance
 ```
 
-The router may attach API status metadata to the structured result, but API status must not replace the local route decision.
+## Canonical startup code path
 
-## First task — locate the exact active branch
+Normal startup must be reduced to this:
 
-Trace every source location that can produce:
+```text
+Start NailSalonNet8
+-> resolve ProductRoot/config
+-> load local DB host/port/database/user/password
+-> connect PostgreSQL
+-> verify required local schema
+-> load local Tenant/POS context
+-> show MainWindow
+-> start API/auth/sync work afterward and non-blockingly
+```
+
+Do not require a protected API call before `MainWindow.Show()`.
+
+Do not require Pairing Code redemption before `MainWindow.Show()`.
+
+Do not route to InstallationV0 merely because API authentication is expired.
+
+## PostgreSQL runtime credential
+
+Audit the active runtime bootstrap/config and prove safely:
+
+```text
+DatabaseName = obm_pos_dev_v0_pg
+DatabaseUsername = hung
+Password source = protected local PostgreSQL credential
+```
+
+Do not print the password or connection string.
+
+If active normal runtime still uses `postgres`, correct the runtime configuration/source so ordinary operation uses `hung`.
+
+The `postgres` administrator role may remain provisioning/backup-only. It must not be the intended daily runtime role.
+
+Do not create users, alter roles, change passwords, or issue GRANT/REVOKE in this prompt.
+
+## Minimal local readiness check
+
+Keep only checks that prevent an unusable DB from crashing the app:
+
+```text
+- local DB config exists;
+- PostgreSQL authentication succeeds;
+- expected application schema exists;
+- essential tables/columns needed by startup exist;
+- one local Tenant/POS context can be resolved.
+```
+
+`TblPosRuntimeProfile` may provide local identity/status metadata, but it is not an authentication system and must not be coupled to API token state.
+
+For the current physical database, `RuntimeState=Activated` is consistent evidence that the local POS is installed. Do not add additional Phase/API proof gates after this point.
+
+## Remove the incorrect BootstrapRepair route
+
+Find every active branch producing:
 
 ```text
 POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED
 BootstrapRepairRequired
 RepairBootstrap
 NeedsBootstrapRepair
-CanEnterNormalApplication
 ```
 
-Audit at least:
+Classify each branch as either:
 
 ```text
-App.OpenInstalledPosFromInstallationV0Async
-App.StartNormalApplicationAsync
-App.ShowMainWindowForActivatedRuntimeAsync
-ApplicationStartupCoordinator
-DatabaseStartupAssessment / DatabaseStartupMode
-RuntimeProfileStartupAssessmentService
-Phase1InstallationService
-InstallationV0Window
-InstallationV0Module
-PosStartupRouteResult
+A. Local PostgreSQL configuration/credential failure
+B. API/cloud credential failure
 ```
 
-Return the exact predicate and value source that selected `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED` even though `LocalPosReady=True` and `RuntimeState=Activated`.
-
-Do not infer. Report exact pre-change branch order.
-
-## Required route model
-
-Create or enforce a route composition model with two independent outputs:
-
-### Local route
+Required behavior:
 
 ```text
-OpenMainPos
+A -> installation/recovery may be appropriate
+B -> never blocks MainWindow; API status only
+```
+
+If the code uses one ambiguous `BootstrapRepairRequired` value for both domains, split or rename it. Prefer deletion from the normal local startup path rather than another precedence/override layer.
+
+After this prompt, `WPF_HELLO_HTTP_401` must not be able to produce:
+
+```text
+POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED
 OpenInstallation
 OpenRecovery
 Blocked
 ```
 
-### API/cloud state
-
-```text
-Online
-OfflineDeferred
-ReauthorizationRequired
-Unknown
-```
-
-Required combinations include:
-
-| Local state | API state | Local route |
-| --- | --- | --- |
-| Activated/ready | Online | OpenMainPos |
-| Activated/ready | ReauthorizationRequired | OpenMainPos |
-| Activated/ready | OfflineDeferred | OpenMainPos |
-| Installing | any | OpenInstallation |
-| RecoveryRequired | any | OpenRecovery |
-| Disabled | any | OpenRecovery or Blocked |
-| DB bootstrap missing/corrupt | any | OpenInstallation/Recovery |
-
-Do not overload one enum/result code to represent both domains.
-
-## Corrected decision ordering
-
-The shared startup router must use this order:
-
-```text
-1. Resolve local runtime ProductRoot/config.
-2. Validate Development protected-lane safety.
-3. Authenticate to local PostgreSQL.
-4. Verify schema and local identity.
-5. Read TblPosRuntimeProfile.RuntimeState.
-6. Select local route.
-7. If route is OpenMainPos, show MainWindow.
-8. Initialize/probe API independently.
-9. Attach Online/OfflineDeferred/ReauthorizationRequired state without changing OpenMainPos success.
-```
-
-An API credential failure observed before step 7 may be recorded for later UI status, but cannot override an already valid local route.
+when local PostgreSQL is usable.
 
 ## MainWindow transition
 
-Preserve prompt051 structured transition:
+Preserve the structured transition from prompt051:
 
 ```text
+PosStartupRouteResult
 ShowMainWindowForActivatedRuntimeAsync
--> dispatcher
--> preserve previous window/shutdown state
--> ShutdownMode.OnExplicitShutdown
--> resolve MainWindow
--> set Application.Current.MainWindow
--> Show
--> Activate
--> verify IsVisible
--> ShutdownMode.OnMainWindowClose
--> return structured success
 ```
 
-For the current physical state, this method must be reached.
+But make the route decision directly from local DB readiness.
 
-The expected final result is:
+Success must be:
 
 ```text
 RouteDecision=OpenMainPos
 ResultCode=OPEN_POS_MAINWINDOW_SHOWN
 StageId=PosStartupRouter
-RuntimeState=Activated
 LocalRuntimeReady=True
 MainWindowConstructed=True
 MainWindowShown=True
 MainWindowVisible=True
-ApiStatus=ReauthorizationRequired
 ```
 
-## Direct Runtime Development route
-
-Verify the primary startup route independently:
+Then API status may be recorded separately as:
 
 ```text
-NailSalonNet8 + OBM-POS Runtime Development
--> local runtime assessment
--> Activated/ready
--> MainWindow
--> API 401 handled after local UI
+Online
+OfflineDeferred
+ReauthorizationRequired
 ```
 
-It must not open InstallationV0 or route to bootstrap repair solely because the Phase 1/API credential is unauthorized.
+API status must not rewrite the successful local route.
 
-## Installation and recovery semantics to preserve
+## InstallationV0 diagnostics button
 
-Initial clean installation may still require Phase 1/API authorization before local identity/database mutation.
+`Open OBM-POS` must call the same local DB startup method as direct runtime startup.
 
-Local bootstrap repair remains valid only for real local failures such as:
+It must not call a separate API/bootstrap readiness path.
+
+Required result for the current physical state:
 
 ```text
-runtime bootstrap file missing
-PostgreSQL password cannot be read
-local DB config invalid
-DB unreachable
-schema unusable
-runtime profile missing/inconsistent
-Tenant/POS identity inconsistent
-RuntimeState Installing/RecoveryRequired/Disabled
+click once
+-> local DB connection succeeds
+-> schema usable
+-> MainWindow visible
+-> InstallationV0 closes
+-> API remains ReauthorizationRequired
 ```
 
-Do not remove these protections.
+## Direct runtime startup
+
+Verify independently:
+
+```text
+NailSalonNet8
++ OBM-POS Runtime Development
+-> connect obm_pos_dev_v0_pg as hung
+-> MainWindow opens directly
+```
+
+Even with API stopped or WpfJwt expired:
+
+```text
+MainWindow opens
+local CRUD remains available
+API/sync is offline only
+```
+
+## Do not add more architecture
+
+Do not add new route engines, provenance layers, hidden security flags, installation status tables, authentication abstractions, or password systems.
+
+Prefer deleting conditions and simplifying methods.
+
+The final normal-startup decision should be understandable as:
+
+```csharp
+if (await LocalDatabaseIsUsableAsync())
+{
+    return await ShowMainWindowAsync();
+}
+
+return OpenInstallationOrRecoveryForLocalDatabaseFailure();
+```
+
+API initialization belongs after the successful `ShowMainWindowAsync()` result.
 
 ## No-mutation requirements
 
-This prompt must not:
+Do not:
 
 ```text
-redeem Pairing Code
-refresh/rotate tokens
-mutate PostgreSQL
-rerun seed
-rewrite markers
-change runtime state/history
-change employees/PINs/outbox
-change DB roles/passwords
-set User/Machine environment variables
+- mutate PostgreSQL;
+- rerun seed;
+- rewrite markers;
+- update runtime state/history;
+- redeem Pairing Code;
+- refresh/rotate tokens;
+- change employee PINs;
+- create/alter PostgreSQL roles;
+- change DB passwords;
+- set User/Machine environment variables.
 ```
 
-Startup and diagnostics checks remain read-only.
+## Required source audit
+
+Inspect and simplify only the necessary paths, including:
+
+```text
+App.xaml.cs
+ApplicationStartupCoordinator
+RuntimeProfileStartupAssessmentService
+DatabaseStartupAssessment / DatabaseStartupMode
+StartNormalApplicationAsync
+OpenInstalledPosFromInstallationV0Async
+ShowMainWindowForActivatedRuntimeAsync
+InstallationV0Module
+InstallationV0Window
+AppJwtBootstrapper / post-MainWindow API startup
+runtime bootstrap/config credential provider
+```
+
+Report the exact branch that incorrectly translated API HTTP 401 into local bootstrap repair.
 
 ## Tests
 
-Add focused tests for at least:
+Add focused tests proving:
 
 ```text
-LocalPosReady=True + RuntimeState=Activated + API HTTP 401
--> OpenMainPos
-
-LocalPosReady=True + RuntimeState=Activated + API unavailable
--> OpenMainPos
-
-LocalPosReady=True + RuntimeState=Activated + API reauthorization required
+local DB usable + user hung credential accepted + API HTTP 401
 -> OPEN_POS_MAINWINDOW_SHOWN
 
-API bootstrap credential invalid
--> ApiStatus=ReauthorizationRequired
+local DB usable + API unavailable
+-> OPEN_POS_MAINWINDOW_SHOWN
+
+local DB usable + WpfJwt expired
+-> OPEN_POS_MAINWINDOW_SHOWN
+
+local DB usable + Pairing Code absent
+-> OPEN_POS_MAINWINDOW_SHOWN
+
+API 401
+-> API status ReauthorizationRequired
 -> local route unchanged
 
-local DB bootstrap missing
--> BootstrapRepairRequired remains valid
+local DB config missing
+-> installation/recovery route
 
-PostgreSQL credential unreadable
--> local route blocked/recovery
+PostgreSQL authentication fails
+-> installation/recovery route
 
-RuntimeState=Installing
--> OpenInstallation regardless of API state
+schema missing/unusable
+-> installation/recovery route
 
-RuntimeState=RecoveryRequired
--> OpenRecovery regardless of API state
+no active API branch produces POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED
 
-prompt051 structured-result preservation remains intact
-
-no active branch emits POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED solely from WPF_HELLO_HTTP_401
+runtime uses configured role hung, not postgres, for normal operation
 
 prompt052 label
 ```
@@ -372,7 +357,7 @@ dotnet build E:\Project2026\4POS\NailSalonNet8\InstallationV0\InstallationV0.csp
 
 dotnet build E:\Project2026\4POS\NailSalonNet8\NailSalonNet8.csproj -v minimal
 
-dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0|FullyQualifiedName~Startup|FullyQualifiedName~OpenObmPos|FullyQualifiedName~RuntimeState|FullyQualifiedName~MainWindow|FullyQualifiedName~Offline|FullyQualifiedName~BootstrapRepair" -v minimal
+dotnet test E:\Project2026\4POS\NailSalonNet8.Tests\NailSalonNet8.Tests.csproj --filter "FullyQualifiedName~InstallationV0|FullyQualifiedName~Startup|FullyQualifiedName~OpenObmPos|FullyQualifiedName~MainWindow|FullyQualifiedName~Offline|FullyQualifiedName~Database" -v minimal
 ```
 
 ## Build label
@@ -386,24 +371,20 @@ Window title: OBM InstallationV0 Phase 1/2 - prompt052
 
 ## Physical execution policy
 
-Do not redeem a new Pairing Code.
+Do not redeem Pairing Code.
 
 Do not mutate DB.
-
-Do not automatically launch WPF if it may interfere with the operator session.
 
 Leave final physical tests to the operator:
 
 ```text
-Route A — prompt052 InstallationV0 with current HTTP 401
-          -> Local POS Ready/Activated
-          -> Open OBM-POS
-          -> MainWindow visible
-          -> API remains ReauthorizationRequired
+A. InstallationV0 prompt052, API still HTTP 401
+   -> Open OBM-POS
+   -> MainWindow opens
 
-Route B — Runtime Development with API credential invalid/unavailable
-          -> MainWindow opens directly
-          -> local CRUD available
+B. Runtime Development, API unavailable
+   -> MainWindow opens directly
+   -> local CRUD works
 ```
 
 ## Report 052
@@ -417,29 +398,27 @@ report/report052.md
 Required sections:
 
 1. Verdict.
-2. Physical prompt051 `POS_RUNTIME_ROUTE_BOOTSTRAPREPAIRREQUIRED` evidence.
-3. Exact active branch/predicate root cause.
-4. Local-runtime bootstrap versus API-bootstrap distinction.
-5. Corrected route precedence.
-6. Local route + API state composition model.
-7. MainWindow transition preservation.
-8. Direct runtime behavior.
-9. Installation/recovery safeguards retained.
-10. No-mutation proof.
-11. Exact source files changed.
-12. Build/test commands and counts.
-13. Prompt052 label proof.
-14. Exact operator retest steps.
-15. Deferred refresh-token/PIN/Identity cleanup.
-16. No secrets/no DB mutation/no source push proof.
-17. Coordination commit SHA.
+2. Evidence that local DB was ready while API/bootstrap repair blocked startup.
+3. Exact incorrect branch removed.
+4. Final minimal local PostgreSQL startup rule.
+5. Runtime DB username proof (`hung`, sanitized).
+6. API-offline behavior.
+7. MainWindow transition proof.
+8. Conditions deleted from normal startup.
+9. Conditions retained only for real local DB failure.
+10. Exact source files changed.
+11. Build/test commands and counts.
+12. Prompt052 label proof.
+13. Operator retest steps.
+14. No secrets/no DB mutation/no source push proof.
+15. Coordination commit SHA.
 
 ## Valid verdicts
 
 ```text
-OBM_POS_ACTIVATED_LOCAL_RUNTIME_OVERRIDES_API_BOOTSTRAP_REPAIR_READY_FOR_USER_RETEST
+OBM_POS_SIMPLE_LOCAL_DATABASE_STARTUP_READY_FOR_USER_RETEST
 ```
 
 ```text
-BLOCKED_OBM_POS_LOCAL_RUNTIME_ROUTE_PRECEDENCE
+BLOCKED_OBM_POS_SIMPLE_LOCAL_DATABASE_STARTUP
 ```
