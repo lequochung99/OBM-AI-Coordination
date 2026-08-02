@@ -39,6 +39,16 @@ Terminal treated as general sync destination: no; no SubscriberId/API sync contr
 Routing filters by eligible component role: no; current routing lacks proven role discriminator
 One station can contain both OBM-POS and CompanionApp registrations: not-proven in TblTenantPosDevice; conceptually allowed by addendum but not implemented
 
+
+Existing POS1-10 UI identified: partial/source identifies active Platform install UI; operator-stated POS1-10 working UI preserved
+Existing Pairing Code UI/API path preserved: yes
+Parallel POS/pairing path introduced count: 0
+Logical POS writer proven: yes, PlatformAppV0Phase1Controller.CreatePosStation -> PlatformAppV0Store -> PlatformAppV0State.PosStations
+WPF startup failure boundary identified: no physical boundary identified; operator reports WPF does not start, but prompt116 remained blocked before WPF physical run
+WPF startup physically succeeds: no
+WPF canonical runtime DB proof: no physical proof in this update
+WPF pending migrations count: not measured
+WPF reaches installation UI or MainWindow as expected: no physical proof
 Canonical WPF Provider identified: yes
 Existing periodic worker used canonical Provider: source-code-only yes; physical cycle no
 Canonical Provider invocation count: 0
@@ -86,5 +96,6 @@ Booking Weight changed: no
 Production/customer/reference DB mutated: no
 
 Private artifact: yes
-Aggregate SHA-256: 9c42cd6cc4d72bb3f06b6f6c29c28649b4f99086b25ea1b79c39d865486a9cdb
+Aggregate SHA-256: acc4caa30b83e1cb7b981e90b86beef919cbe97ee0a3440eac9a611cd410b949
+
 
