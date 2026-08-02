@@ -17,6 +17,59 @@ Blocker = Price Rule sync contract missing
 
 Therefore the empty grid is not a load defect. The target database currently has no Price / Amount rules.
 
+## New physical operator evidence — Save fails after Add Row
+
+After prompt087, the operator physically used the current WPF UI:
+
+```text
+Price / Amount Rule Settings
+-> Add Row
+-> enter a rule in the grid
+-> click Save
+-> Save fails
+```
+
+This confirms that creating rules is required and that the remaining defect is in the real Price Rule Save pipeline, not in Load/ListView.
+
+Treat this physical failure as mandatory reproduction evidence. Do not return a ready verdict based only on unit tests or static inspection.
+
+Before editing the Save path, capture privately:
+
+```text
+exact dialog/status/result code
+StageId
+ExceptionType
+InnerExceptionType
+sanitized exception message
+PostgreSQL SqlState if present
+table/column/constraint if present
+EF entity states
+transaction state
+SaveChangesAsync call number
+full project stack trace from Save click to failure
+```
+
+If the current UI only exposes a generic Save failure, add temporary local diagnostics or use debugger inspection to obtain the inner exception, then remove any raw/private diagnostics before finalizing.
+
+The private handoff must include complete BEFORE and AFTER C# method bodies for:
+
+```text
+Save click handler
+DataGrid focused-cell/row commit
+new/dirty/deleted row detection
+validation
+production Price Rule save service
+current-tenant rule reload
+insert/update/delete mapping
+transaction begin/commit/rollback
+outbox creation
+SaveChangesAsync
+reload-after-save
+exception/result mapping
+```
+
+Do not provide isolated snippets. Include repository-relative paths and line ranges.
+
 The remaining task is to make explicit operator setup fully functional:
 
 ```text
@@ -76,14 +129,15 @@ If prompt087 proved product-safe default rows, preserve those exact defaults onl
 
 1. Prove the exact Price Rule entity/schema and ownership contract.
 2. Implement Add/Edit/Delete/Reset dirty tracking and validation.
-3. Implement one atomic PostgreSQL Save boundary.
-4. Add canonical `TblLocalOutbox` events through the existing outbox framework.
-5. Implement the missing WPF receiver/apply path through the existing inbound delivery framework.
-6. Ensure inbound apply is idempotent and creates no local outbox echo.
-7. Ensure Test Lookup uses the same production rule-selection algorithm.
-8. Add real PostgreSQL integration proof.
-9. Do not mutate the operator's current DB automatically.
-10. Do not commit or push OBM source.
+3. Reproduce and fix the operator's actual Add Row -> Save failure with direct exception evidence.
+4. Implement one atomic PostgreSQL Save boundary.
+5. Add canonical `TblLocalOutbox` events through the existing outbox framework.
+6. Implement the missing WPF receiver/apply path through the existing inbound delivery framework.
+7. Ensure inbound apply is idempotent and creates no local outbox echo.
+8. Ensure Test Lookup uses the same production rule-selection algorithm.
+9. Add real PostgreSQL integration proof.
+10. Do not mutate the operator's current DB automatically.
+11. Do not commit or push OBM source.
 
 ## Documentation gate
 
@@ -106,6 +160,7 @@ Record locally:
 DOCS_READ_BEFORE_CODE_GATE=PASS
 ARCHITECTURE_DECISION=POSTGRESQL_ONLY
 EVIDENCE_MODE=PRICE_RULE_SAVE_SYNC_REAL_SCHEMA
+EVIDENCE_ESCALATION=PHYSICAL_SAVE_FAILURE_DIRECT_PROOF
 CanonicalDocVersion=<actual>
 CanonicalDocSha256=<actual>
 ```
@@ -207,6 +262,8 @@ One invalid row must block all inserts/updates/deletes.
 No partial save.
 Show row-specific safe messages.
 
+If the operator's physical Save failed because the row was invalid, the UI must report a precise validation result before transaction start; it must not return a generic Save exception.
+
 ## Phase D — canonical atomic Save boundary
 
 Implement one clearly owned save service/method.
@@ -233,6 +290,27 @@ UI commits focused edit
 ```
 
 Do not require Draft Policy or Active Policy unless the proven schema has a mandatory policy FK. If a mandatory policy FK exists, explain how model A can allow pre-policy editing without creating a policy. Do not silently create a policy.
+
+### Required structured diagnostics
+
+Success must report concepts equivalent to:
+
+```text
+NewRows
+DirtyRows
+DeletedRows
+ValidatedRows
+InsertedRows
+UpdatedRows
+DeletedDbRows
+OutboxRows
+Committed
+ReloadSucceeded
+StageId
+ResultCode
+```
+
+A failure must preserve accurate counters and the real failing stage. Do not repeat the earlier Employee Weight problem where validation counters and Save stage contradicted each other.
 
 ### Outbox event granularity
 
@@ -340,6 +418,7 @@ Prove at least:
 ```text
 zero-rule load succeeds
 Add Row + Save inserts rule(s)
+operator physical Save failure is reproduced before the fix or its exact exception is proven
 edit + Save updates rule(s)
 delete + Save removes/deactivates according to contract
 exact expected outbox event count
@@ -380,7 +459,7 @@ production ProviderName = Npgsql.EntityFrameworkCore.PostgreSQL
 4. Click Add Row or Reset Defaults according to the proven model.
 5. Confirm rows appear in memory only.
 6. Enter one valid small test rule set approved by the operator.
-7. Click Save once.
+7. Keep focus in the last edited DataGrid cell and click Save once.
 8. Confirm structured committed status and no exception.
 9. Close/reopen and verify persistence.
 10. Verify expected Price Rule outbox event count safely.
@@ -404,18 +483,19 @@ production ProviderName = Npgsql.EntityFrameworkCore.PostgreSQL
 
 Return directly to the operator:
 
-1. Exact rule ownership and lookup contract.
-2. Exact reason sync contract was previously missing.
-3. Complete before/after Save method bodies.
-4. Exact transaction boundary and SaveChanges count.
-5. Outbox event granularity and payload mapping.
-6. WPF receiver apply and no-echo proof.
-7. Validation rules.
-8. Reset Defaults semantics.
-9. Real PostgreSQL integration test code/output.
-10. Build/test results.
-11. Physical retest steps.
-12. Explicit confirmation that checkout and Turn Policy code were unchanged.
+1. Exact physical Save failure root cause and inner exception.
+2. Exact rule ownership and lookup contract.
+3. Exact reason sync contract was previously missing.
+4. Complete before/after Save method bodies.
+5. Exact transaction boundary and SaveChanges count.
+6. Outbox event granularity and payload mapping.
+7. WPF receiver apply and no-echo proof.
+8. Validation rules.
+9. Reset Defaults semantics.
+10. Real PostgreSQL integration test code/output.
+11. Build/test results.
+12. Physical retest steps.
+13. Explicit confirmation that checkout and Turn Policy code were unchanged.
 
 ## Public report
 
@@ -429,6 +509,7 @@ It may contain only:
 
 ```text
 verdict
+physical Add Row -> Save failure root cause proven yes/no
 initialization model A preserved yes/no
 save boundary proven yes/no
 outbox contract proven yes/no
@@ -445,6 +526,10 @@ one aggregate evidence SHA-256
 
 ```text
 OBM_POS_PRICE_RULE_SAVE_SYNC_READY_FOR_PHYSICAL_RETEST
+```
+
+```text
+BLOCKED_PRICE_RULE_SAVE_ROOT_CAUSE_UNPROVEN
 ```
 
 ```text
