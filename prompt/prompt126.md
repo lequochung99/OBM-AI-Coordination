@@ -1,624 +1,555 @@
-# Prompt126 — Rebuild the canonical two-phase OBM-POS installation flow: local database first, cloud pairing second
+# Prompt126 — Implement canonical V004 simple two-phase installation and perform a fresh self-provisioned OBM-POS install
 
-## Authoritative correction
+## Starting checkpoint
 
-This prompt supersedes the implementation direction of prompt125.
-
-The prior direction incorrectly made PlatformApp/pairing own the local PostgreSQL database name. That is not the product contract.
-
-The canonical installation has exactly two independent phases:
+Latest accepted report:
 
 ```text
-Phase 1 — Local OBM-POS installation
-WPF collects local PostgreSQL connection/provisioning inputs directly from the operator:
-- host, with a safe local default
-- port, with the existing safe PostgreSQL default
-- PostgreSQL username
-- PostgreSQL password
-- target local database name
-
-WPF then creates the local database when absent, applies migrations, seeds the required baseline, records local runtime readiness, and completes local application activation.
-
-No Pairing Code is required for Phase 1.
-
-Phase 2 — Cloud/API authorization
-After local installation is complete, the operator enters a Pairing Code.
-WPF redeems it, receives the existing WpfJwt/bootstrap credential, and persists it securely on the PC.
-
-Phase 2 enables API/sync/cloud functionality but does not determine whether the local OBM-POS application can run.
+report/report125.md
+coordination commit: 2ceb9fbfae8152119dcfd658700417f3178a381d
+verdict: BLOCKED_ACTIVE_V0_DB_NAME_FALLBACK_REMOVAL
+private artifact SHA-256: 372338b64a6ca458b6cfb3ca36d9786a70ddcff0a4f8e024b65b558add6dedcf
 ```
 
-PlatformApp owns Tenant/POS selection and Pairing Code issuance. PlatformApp does not own or transmit local PostgreSQL host, username, password, or database name.
+Prompt125 added `LocalPosDatabaseName` through PlatformApp -> pairing authorization -> redeem -> WPF checkpoint, but that ownership is now non-canonical.
 
-## Starting evidence
-
-Read completely:
+The operator has established a new binding architecture document:
 
 ```text
-report/report120.md
-report/report122.md
-report/report124.md
-prompt/prompt124.md
-prompt/prompt125.md
+E:\Project2026\4POS\NailSalonNet8\docs\refactoryInstallation\INSTALLATION_RUNTIME_CANONICAL_V004.md
+expected SHA-256:
+54d38eb1dd0b1fe53564d4550138f74d8b3099e1d85d521a2821f20d808450cb
 ```
 
-Verify the private artifacts referenced by those reports when locally available.
+V004 supersedes V003 and all prior installation/startup prompt interpretations.
 
-Accepted evidence:
+If the exact local V004 file is absent or its SHA does not match, stop with:
 
 ```text
-- Current canonical Development DB obm_pos_dev_v0_pg was emptied during prior reset/migration work.
-- The normal WPF startup returned to InstallationV0 because no valid local installed state remained.
-- TblPosRuntimeProfile and TblPosRuntimeStateHistory repository/model classes exist in source, but the active attached EF migration/model chain did not physically create those tables in the inspected DB.
-- CleanLocalDatabaseService.CreateCleanDatabaseAsync already accepts a local TargetDatabaseName.
-- Pairing/redeem currently returns WpfJwt only; no refresh-token contract exists.
-- Retained WpfJwt loss or API availability must not control local MainWindow eligibility.
+BLOCKED_CANONICAL_V004_DOCUMENT_MISSING_OR_MISMATCHED
 ```
 
-## Product contract locks
+Do not infer or substitute an older document.
 
-### Phase 1 is fully local
+## Authoritative architecture
+
+### Exactly two independent phases
+
+```text
+Phase 1 — local WPF installation
+Phase 2 — cloud pairing after MainWindow
+```
+
+### Phase 1
+
+WPF alone owns:
+
+```text
+PostgreSQL host, default 127.0.0.1
+PostgreSQL port, default 5432
+PostgreSQL username
+protected PostgreSQL password
+operator-selected local database name
+server connection test
+database creation
+EF/Npgsql migrations
+minimal baseline seed
+runtime-profile state
+MainWindow startup routing
+```
 
 Phase 1 must not require:
 
 ```text
-PlatformApp online
+PlatformApp
 Pairing Code
 WpfJwt
-API protected hello
+API availability
 SignalR
-sync availability
-Tenant/POS cloud authorization
+CompanionApp
+BookingConsole
 ```
 
-The local operator provides the PostgreSQL inputs directly in WPF.
+### Phase 2
 
-### Phase 2 is cloud authorization only
-
-Pairing Code redemption may occur only after local installation reaches ApplicationReady.
-
-An optional early Pairing Code/API preflight may be retained only if the current UI already supports it, but before ApplicationReady it may do no more than:
+Only after local `ApplicationReady` and MainWindow are available:
 
 ```text
-check API reachability
-check that the code format/request can be accepted safely
-show that cloud authorization will be possible later
+operator enters Pairing Code
+WPF redeems it
+WPF stores the API credential in protected local storage
+cloud/API/sync/SignalR become Online when authorized
 ```
 
-It must not:
+Missing token, expired token, HTTP 401, absent refresh-token support, or API outage must never reopen local installation.
+
+## Strict scope
+
+Execute this task as one controlled refactor and physical fresh-install proof:
 
 ```text
-become a prerequisite for database creation
-persist an active cloud credential before local installation completion
-write local installation completion state
-control MainWindow eligibility
+1. Verify and adopt canonical V004.
+2. Remove prompt125 DB-name ownership from PlatformApp/pairing/redeem.
+3. Restore local DB configuration ownership to WPF local setup.
+4. Ensure the WPF migration chain creates TblPosRuntimeProfile and TblPosRuntimeStateHistory.
+5. Implement the two runtime-state transactions.
+6. Make startup route only from protected local DB configuration + TblPosRuntimeProfile.
+7. Remove active production fallback references to obm_pos_dev_v0_pg.
+8. Add destructive-operation guards.
+9. Perform a real fresh WPF self-provisioned installation to a previously absent DB.
+10. Prove MainWindow startup while API is offline.
+11. Only after local proof, exercise Phase 2 pairing when an authorized Pairing Code can be issued safely.
 ```
 
-### Local-first behavior
+Do not resume Category Weight, Booking Weight, TblTenantPosDevice routing, POS2 sync, terminal/Companion modeling, refresh-token architecture, or broad Firebase/env cleanup.
 
-Once the local runtime profile is ApplicationReady:
+## Phase 0 — Evidence and source intake
+
+Read completely:
 
 ```text
-API offline
-WpfJwt missing
-WpfJwt expired
-WpfJwt rejected with 401
-no refresh-token path
-SignalR unavailable
-sync failure
+INSTALLATION_RUNTIME_CANONICAL_V004.md
+report/report122.md
+report/report124.md
+report/report125.md
+prompt/prompt125.md
 ```
 
-must result only in:
+Inspect the active source call chains only for:
 
 ```text
-Cloud/API status = Offline or Degraded
-```
-
-They must not:
-
-```text
-open InstallationV0
-close MainWindow
-block checkout/local settings/local database use
-clear local runtime readiness
-clear local activation
-clear the database configuration
-```
-
-## Frozen work
-
-Do not implement or modify:
-
-```text
-Category Weight
-Booking Weight
-Price Weight save semantics
-TblTenantPosDevice
-API destination routing
-POS2 pull/apply/ACK
-CompanionApp/payment-terminal modeling
-Firebase cleanup
-.env cleanup
-refresh-token architecture
-new sync uploader/bot/endpoint
-```
-
-Do not reset/drop/recreate `obm_pos_dev_v0_pg`. Preserve it as damaged-state evidence.
-
-Do not pre-create the new target DB outside WPF.
-
-## Strict goal
-
-Rebuild and physically prove this exact flow:
-
-```text
-WPF Phase 1 local installer
--> operator enters local PostgreSQL host/port/user/password/database name
--> WPF validates the local PostgreSQL connection
--> WPF creates the target DB when absent
--> WPF applies the canonical attached Npgsql migrations
--> WPF seeds the minimal baseline
--> WPF records DatabaseReady atomically with the baseline
--> WPF completes local application finalization
--> WPF records ApplicationReady
--> WPF opens MainWindow with API offline
--> operator optionally performs Phase 2 Pairing Code redeem
--> WPF stores WpfJwt securely
--> token/API failure never downgrades the local ApplicationReady state
-```
-
-Use this Development target for physical proof:
-
-```text
-obm_pos_dev_v1_pg
-```
-
-The name must be entered in WPF Phase 1 UI. It must not come from PlatformApp and must not be hardcoded in production source.
-
-## Phase 0 — Audit the active installation and startup call chains
-
-Before editing, map the exact current source call chains for:
-
-```text
-WPF startup window selection
-InstallationV0 Phase 1 UI
-local PostgreSQL input collection
-local DB settings persistence
+WPF local PostgreSQL setup UI and configuration persistence
 CleanLocalDatabaseService.CreateCleanDatabaseAsync
-maintenance DB connection used for CREATE DATABASE
-runtime DB connection resolution
-canonical WPF DbContext
-migration execution
-baseline seed transaction
-runtime-profile repository
-application finalization/activation
-Pairing Code redeem
-WpfJwt protected persistence
-MainWindow eligibility
+canonical Npgsql DbContext and migration assembly
+runtime-profile entities/repository
+Phase2 baseline seed transaction
+local application finalization
+App.xaml.cs / LocalPosStartupService routing
+PlatformApp prompt125 LocalPosDatabaseName diff
+pairing authorization/redeem/checkpoint LocalPosDatabaseName diff
+all active obm_pos_dev_v0_pg references
+all destructive reset/drop/truncate paths reachable from startup/install/migrate
 ```
 
-Identify and report:
+Record before editing:
 
 ```text
-LOCAL_DB_INPUT_UI_OWNER
-LOCAL_DB_SETTINGS_MODEL
-LOCAL_DB_SETTINGS_PROTECTED_STORAGE_OWNER
-DATABASE_CREATE_SERVICE
-MIGRATION_OWNER
-BASELINE_TRANSACTION_OWNER
-RUNTIME_PROFILE_WRITER_OWNER
-APPLICATION_FINALIZATION_OWNER
-PAIRING_REDEEM_OWNER
-WPF_TOKEN_STORAGE_OWNER
-STARTUP_ROUTING_OWNER
+CANONICAL_DOCUMENT=V004
+CANONICAL_SHA_VERIFIED=true
+PHASE1_OWNER=WPF_LOCAL_ONLY
+PHASE2_OWNER=CLOUD_PAIRING_AFTER_MAINWINDOW
+PLATFORMAPP_LOCAL_DB_OWNERSHIP=FORBIDDEN
+TARGET_FRESH_DB=obm_pos_dev_v1_pg
+TARGET_DB_MUST_BE_ABSENT_BEFORE=true
+MANUAL_DB_PRECREATION=FORBIDDEN
+MANUAL_SQL_RUNTIME_PROFILE_INSERT=FORBIDDEN
+CATEGORY_WEIGHT=DEFERRED
+BOOKING_WEIGHT=DEFERRED
+MANUAL_POS1_TEST_READY=false
 ```
 
-Do not create parallel services when an existing owner can be corrected.
+## Phase 1 — Remove the non-canonical prompt125 handoff
 
-## Phase 1 — Rebuild the WPF local-installation UI and local configuration contract
+Prompt125 introduced `LocalPosDatabaseName` through PlatformApp and pairing. Under V004, ordinary local DB configuration belongs only to WPF.
 
-The WPF local installation phase must collect:
+Remove `LocalPosDatabaseName` from active production ownership in:
 
 ```text
-Host
-Port
-PostgreSQL username
-PostgreSQL password
-Target local database name
+PlatformApp UI
+PlatformApp client request
+pairing-code request
+pairing authorization state
+installation attempt state
+redeem response
+bootstrap identity response
+WPF pairing/redeem checkpoint
+normal Phase2 target-DB mapping
 ```
 
 Requirements:
 
 ```text
-- Host defaults to the existing safe local PostgreSQL host, normally 127.0.0.1 or localhost according to current conventions.
-- Port defaults to the existing PostgreSQL port convention.
-- Database name is validated by the one existing/canonical PostgreSQL DB-name validator.
-- Username/password are never logged or written to reports.
-- Connection strings are never printed in full.
-- Password is never stored in plaintext.
-- Reuse the existing protected local DB-settings mechanism; do not invent a second configuration store.
-- Normal production source must have zero active fallback to Phase2TrialConstants.ApprovedDatabaseName or another fixed Development DB name.
+PlatformApp still supports administrator authorization, Tenant/POS selection, and Pairing Code issuance
+Pairing Code behavior remains cloud authorization only
+no local host/port/user/password/database name crosses the pairing contract
+no token/header/WpfJwt weakening
+no new endpoint
 ```
 
-The local DB settings must survive restart through the existing protected local configuration boundary because the runtime app must reconnect later.
+Compatibility code may remain only when direct source evidence proves a required backward-read boundary. It must not be active for new V004 installation and must be clearly marked compatibility-only.
 
-Record only safe proof fields:
+Focused tests must prove:
 
 ```text
-host classification
-port
-safe DB name
-username-present marker
-password-protected marker
-provider=Npgsql/PostgreSQL
+PlatformApp pairing request has no local DB configuration
+redeem response has no local DB configuration
+WPF pairing checkpoint has no local DB configuration
 ```
 
-## Phase 2 — Attach the runtime-profile physical schema to the canonical WPF migration chain
+## Phase 2 — Canonical WPF local setup
 
-The fresh target DB must physically contain:
+Reuse the existing InstallationV0/local database setup UI and service boundaries. Do not create a second installer.
+
+The UI must collect or resolve:
 
 ```text
-dbo."TblPosRuntimeProfile"
-dbo."TblPosRuntimeStateHistory"
+Host: default 127.0.0.1
+Port: default 5432
+Username
+Password
+Database name
 ```
 
-Use the existing runtime-profile domain/repository classes when viable:
+For the physical Development proof use:
 
 ```text
-Services/RuntimeProfile/PosRuntimeState.cs
-Services/RuntimeProfile/PosRuntimeProfileModels.cs
-Services/RuntimeProfile/PostgresPosRuntimeProfileRepository.cs
+Database name: obm_pos_dev_v1_pg
+```
+
+The DB name is operator-entered in WPF. It must not be hardcoded as the active production value.
+
+Persist the resulting local DB configuration using the existing protected local configuration boundary.
+
+Security requirements:
+
+```text
+password protected locally
+no password/full connection string in logs, reports, screenshots, source, or artifact text
+no user-secrets dependency for WPF runtime
+no PlatformApp dependency
+```
+
+Validation must reject malformed names, connection-string fragments, SQL-like input, path separators, quotes, semicolons, and protected DB names.
+
+## Phase 3 — Canonical runtime-profile schema
+
+The fresh attached WPF EF/Npgsql migration chain must create:
+
+```text
+TblPosRuntimeProfile
+TblPosRuntimeStateHistory
+```
+
+Use the existing entity/repository design where valid. Attach it to the one canonical WPF DbContext/model and create the minimum required migration/snapshot change.
+
+Do not create:
+
+```text
+TblSchemaVersion
+TblSystemBaselineVersion
+Phase2TrialCompletionMarker
+another readiness framework
+another DbContext
+manual SQL table creation
+```
+
+Before physical install, prove from migration metadata that a zero-state DB will receive both tables.
+
+## Phase 4 — Two short transactions
+
+### Transaction A — DatabaseReady
+
+After database creation and migrations are current:
+
+```text
+BEGIN
+  seed the approved minimal baseline
+  upsert exactly one current runtime-profile row = DatabaseReady
+  append one DatabaseReady history transition
+COMMIT
 ```
 
 Requirements:
 
 ```text
-- Attach the entities/mappings to the one canonical WPF DbContext/model.
-- Create exactly one attached Npgsql migration when the active migration chain lacks these tables.
-- Update the canonical model snapshot.
-- Do not create TblSchemaVersion, TblSystemBaselineVersion, or Phase2TrialCompletionMarker merely to satisfy old readiness logic.
-- Do not use EnsureCreated.
-- Do not create tables with manual psql/pgAdmin SQL.
+baseline and DatabaseReady commit or roll back together
+zero TblLocalOutbox rows from installation seed
+no employee/service/customer/Invoice/Booking/runtime-history business seed
+idempotent retry
 ```
 
-Use existing state names if they already express the required semantics. If current source only has `Activated`, first prove its meaning. Avoid duplicate state vocabularies. The required semantic stages are:
+### Transaction B — ApplicationReady
+
+After local application finalization succeeds:
 
 ```text
-DatabaseReady
-ApplicationReady
+BEGIN
+  upsert the same current profile row = ApplicationReady
+  append one ApplicationReady history transition
+COMMIT
 ```
 
-## Phase 3 — WPF self-provisions the target DB
+If existing source uses a proven equivalent such as `Activated`, map it to V004 `ApplicationReady` semantics rather than creating a duplicate meaning.
 
-Physical precondition:
+Resume requirements:
 
 ```text
-obm_pos_dev_v1_pg does not exist
+no profile row -> resume local DB installation
+DatabaseReady -> resume only application finalization; do not reseed
+ApplicationReady -> MainWindow directly
 ```
 
-Prove absence without creating it manually.
+History must never gate startup.
 
-From the actual WPF InstallationV0 UI, enter the local DB inputs and execute Phase 1.
+## Phase 5 — Startup routing
 
-Required flow:
+The normal startup order must be:
 
 ```text
-validate local PostgreSQL access
--> connect to the maintenance database using the operator-supplied local credential
--> create obm_pos_dev_v1_pg when absent
--> connect to obm_pos_dev_v1_pg through the canonical runtime DB settings
--> apply the attached WPF migrations from zero
--> pending migrations = 0
+resolve protected local DB configuration
+connect to configured local DB
+verify essential schema
+read the single current TblPosRuntimeProfile row
+route locally
+open MainWindow when ApplicationReady
+initialize API session afterward
 ```
 
-Safety requirements:
+Forbidden pre-MainWindow gates:
 
 ```text
-- Existing target DB must never be silently dropped or cleared.
-- If the target DB already exists and is non-empty/inconsistent, stop with a recoverable explicit decision; do not auto-reset it.
-- No normal startup path may call EnsureDeleted, DROP DATABASE, DROP SCHEMA, TRUNCATE, or a destructive reset helper.
-- Destructive test helpers must be unreachable without an explicit disposable-development authorization.
+Pairing Code
+WpfJwt
+ProtectedHello
+API readiness
+SignalR
+refresh token
+PlatformApp state
+CompanionApp state
+BookingConsole state
+history-row counts
+installation evidence counts
 ```
 
-## Phase 4 — Transaction A: baseline plus DatabaseReady
+API/token failure after `ApplicationReady` must only set cloud state to Offline/Degraded/Reauthorization Required.
 
-Use the existing Phase 2/baseline seed service, corrected as necessary.
+## Phase 6 — Remove active legacy DB-name fallback
 
-In one local PostgreSQL transaction:
+Audit every active `obm_pos_dev_v0_pg` reference.
+
+Classify each as:
 
 ```text
-seed the minimal required baseline
-upsert exactly one current TblPosRuntimeProfile row with DatabaseReady-equivalent state
-append one TblPosRuntimeStateHistory DatabaseReady transition
-commit
+production fallback
+Development test fixture
+historical artifact/documentation
+protected-name guard
 ```
 
-The minimal baseline may include only the currently accepted required categories, such as:
+Required result:
 
 ```text
-required settings
-required parameters
-printer defaults
-required built-in roles
-required local setup/activation records proven by source
+ACTIVE_PRODUCTION_DB_NAME_CONSTANT_FALLBACK_COUNT=0
 ```
 
-Do not seed:
+Do not delete valid tests merely because they use a disposable fixture name. Rename/isolate them when needed.
+
+The current damaged/empty `obm_pos_dev_v0_pg` must not be used as the target of this installation and must not be copied into v1.
+
+## Phase 7 — Destructive-operation guard
+
+Normal startup, install resume, migration, API failure, token failure, and local recovery assessment must have zero reachable calls to:
 
 ```text
-employees
-services
-customers
-Invoice
-TblOutputInfo
-Booking
-operational history
-event/delivery history
+EnsureDeleted
+DROP DATABASE
+DROP SCHEMA
+TRUNCATE
+automatic reset/recreate
+automatic reseed of an existing business DB
 ```
 
-Installation seed must create:
+`CleanLocalDatabaseService` may create a missing validated DB. It must not silently drop an existing DB.
+
+Add focused tests proving:
 
 ```text
-TblLocalOutbox rows = 0
+Migrate preserves sentinel rows
+normal startup cannot call a destructive reset path
+existing DB with user/business data and missing profile routes to Recovery UI
+fresh absent DB routes to Local Database Setup
 ```
 
-Atomicity proof is mandatory:
+## Phase 8 — Physical fresh local installation
 
-```text
-- On injected failure before commit: no partial baseline, no DatabaseReady profile, no DatabaseReady history.
-- On success: baseline, current profile, and history commit together.
-```
-
-## Phase 5 — Transaction B: local application finalization plus ApplicationReady
-
-After Transaction A commits, complete the existing local application finalization/activation boundary.
-
-This stage must not require API/Pairing/WpfJwt.
-
-Then, in a second short local PostgreSQL transaction:
-
-```text
-upsert the same current TblPosRuntimeProfile row to ApplicationReady-equivalent state
-append one TblPosRuntimeStateHistory ApplicationReady transition
-commit
-```
-
-Requirements:
-
-```text
-- Exactly one current profile row for the local installation.
-- History is append-only audit.
-- Restart while state=DatabaseReady resumes finalization; it must not recreate/reseed the DB.
-- Replaying finalization when already ApplicationReady is idempotent and creates no duplicate transition.
-```
-
-Do not hold one database transaction open across UI waits, network calls, or process restart.
-
-## Phase 6 — Rewrite startup routing around the local runtime profile
-
-Startup must evaluate local state before remote/cloud state.
-
-Canonical routing:
-
-```text
-No usable protected local DB settings
--> InstallationV0 local configuration phase
-
-Configured DB absent
--> InstallationV0 local DB creation phase
-
-DB exists but no current runtime-profile row
--> recover/resume local installation; do not infer ApplicationReady
-
-Current state = DatabaseReady
--> resume local application finalization
-
-Current state = ApplicationReady
--> open production MainWindow directly
-```
-
-`TblPosRuntimeStateHistory` has zero startup-gating responsibility.
-
-Remove the following from MainWindow eligibility after ApplicationReady:
-
-```text
-Pairing Code existence
-WpfJwt validity
-ProtectedHello success
-API reachability
-SignalR availability
-sync availability
-legacy trial markers
-```
-
-Remote/cloud state is evaluated after MainWindow selection and exposed as connected/degraded/offline status only.
-
-## Phase 7 — Phase 2 cloud pairing after local installation
-
-After MainWindow or the post-installation completion UI is available, allow the operator to enter a Pairing Code.
-
-Use the existing canonical chain:
-
-```text
-PlatformApp creates Pairing Code for Tenant/POS
--> WPF redeem
--> API returns existing WpfJwt/bootstrap credential
--> WPF persists it using the existing DPAPI/protected token store
-```
-
-Requirements:
-
-```text
-- Do not add local DB host/user/password/name to PlatformApp or pairing payloads.
-- Do not create a refresh-token contract in this task.
-- Pairing failure leaves ApplicationReady unchanged.
-- API offline leaves ApplicationReady unchanged.
-- WpfJwt 401 leaves ApplicationReady unchanged.
-- Re-pairing updates only cloud credential state, not local installation state.
-```
-
-Optional pre-install API/pairing preflight, if retained, must remain nonbinding and must not persist an active token before ApplicationReady.
-
-## Phase 8 — Physical acceptance
-
-Use visible WPF label:
+Use the actual WPF Development executable/profile and visible label:
 
 ```text
 prompt126
 ```
 
-### Case A — clean local installation with no Pairing Code
-
-Prove physically:
+Before launch prove safely:
 
 ```text
-obm_pos_dev_v1_pg absent before
-WPF local UI receives host/port/user/password/DB name
-WPF creates obm_pos_dev_v1_pg
-WPF applies migrations from zero
-pending migrations = 0
-TblPosRuntimeProfile exists
-TblPosRuntimeStateHistory exists
-baseline commit succeeds
-current profile row count = 1
-current state = ApplicationReady-equivalent
-DatabaseReady history count = 1
-ApplicationReady history count = 1
-TblLocalOutbox installation rows = 0
-API port 7161 has no listener
-no Pairing Code was redeemed
-MainWindow opens directly
-InstallationV0 closes and does not reopen
-MainWindow remains responsive for at least 60 seconds
+obm_pos_dev_v1_pg exists = false
+API listener 127.0.0.1:7161 = absent/offline
+PlatformApp not required
+Pairing Code not required
 ```
 
-### Case B — restart while API is offline and no token exists
+Do not create the DB manually with pgAdmin, psql, script, test helper, or external provisioning command.
 
-Close normally and launch again.
+Through the real WPF UI/service flow:
+
+```text
+1. Enter local host/port/username/password/database name.
+2. Test PostgreSQL server access.
+3. WPF creates obm_pos_dev_v1_pg.
+4. WPF applies all attached migrations.
+5. Pending migrations becomes 0.
+6. TblPosRuntimeProfile physically exists.
+7. TblPosRuntimeStateHistory physically exists.
+8. Transaction A commits baseline + DatabaseReady + history.
+9. Transaction B commits ApplicationReady + history.
+10. MainWindow opens.
+```
+
+Required safe post-state:
+
+```text
+current runtime-profile row count = 1
+current state = ApplicationReady or proven canonical equivalent
+DatabaseReady history transition count = 1
+ApplicationReady history transition count = 1
+installation-created TblLocalOutbox row count = 0
+```
+
+## Phase 9 — Offline restart proof
+
+Keep API port 7161 offline.
 
 Prove:
 
 ```text
-MainWindow opens directly
+first MainWindow observation >= 60 seconds
+close normally
+second launch opens MainWindow directly
 InstallationV0 does not flash
-local DB remains intact
-profile remains ApplicationReady
-no new baseline rows
-no duplicate history transition
-no DB reset/recreate
+close normally
+third launch opens MainWindow directly
+InstallationV0 does not flash
+local DB read/local CRUD smoke succeeds
+no Pairing Code/token exists requirement
 ```
 
-### Case C — cloud pairing after local installation
+## Phase 10 — Cloud pairing only after local PASS
 
-Start the full API/PlatformApp only after Cases A/B pass.
+Only after Phase 8 and Phase 9 pass may this task exercise Phase 2.
 
-Create/redeem one valid Pairing Code through the existing PlatformApp Tenant/POS flow.
+Start the existing full API and PlatformApp lanes, issue an authorized Pairing Code for the selected Tenant/POS, then redeem it from the existing WPF cloud-connection boundary.
 
 Prove:
 
 ```text
-WpfJwt is returned
-protected token record is persisted
-local DB name/config does not come from PlatformApp
-local runtime profile remains ApplicationReady
+local runtime remains ApplicationReady before/during/after pairing
+credential stored protected locally
+API session becomes Online when accepted
+HTTP 401/offline simulation changes only cloud status
+MainWindow remains open
 ```
 
-Stop the API and restart WPF again.
+Do not add refresh-token architecture.
 
-Prove MainWindow still opens directly with cloud status Offline/Degraded.
+If no operator-authorized Pairing Code can be issued in this run, report cloud pairing as a narrow blocker after preserving local installation PASS. Do not downgrade or undo `ApplicationReady`.
 
-## Required tests and guards
+## Build and tests
 
 Run focused tests for:
 
 ```text
-local installation does not require Pairing Code/API
-local DB input validation
-protected DB-settings persistence and read-back
-fresh DB create only when absent
-existing DB is not silently dropped/cleared
-attached migration creates runtime profile/history tables
-Transaction A rollback/commit atomicity
-Transaction B idempotency
-DatabaseReady restart resume
-ApplicationReady startup opens MainWindow offline
-missing/expired/rejected WpfJwt does not reopen InstallationV0
-Pairing failure does not change local runtime profile
-history does not gate startup
-no legacy fixed DB-name fallback
-no installation outbox rows
+V004 phase ownership
+prompt125 DB-name handoff removal
+local DB config validation and protected persistence
+fresh DB creation request uses operator-entered name
+runtime-profile migration mapping
+Transaction A atomicity and retry
+Transaction B atomicity and retry
+startup routing for no row / DatabaseReady / ApplicationReady
+history is not a startup dependency
+API 401/offline does not reopen installation
+destructive path guards
+active v0 fallback count = 0
 ```
 
-Run WPF build and relevant InstallationV0 tests.
+Run WPF, PlatformApp, and API builds for changed projects.
 
-Physical proof overrides unit-test/build success.
+Physical proof overrides build/test success.
 
-## PASS gate
+## PASS and blocker verdicts
 
-PASS requires all of these:
+Full PASS verdict:
 
 ```text
-WPF directly collected local PostgreSQL inputs
-PlatformApp did not own local DB configuration
-WPF self-created obm_pos_dev_v1_pg from an absent state
-runtime profile/history tables were created by attached migration
-baseline + DatabaseReady committed atomically
-ApplicationReady was recorded through the production lifecycle writer
-MainWindow opened with API offline and no Pairing Code/token
-second launch again opened MainWindow directly
-later Pairing Code redeem persisted WpfJwt without changing local readiness
-final API-offline restart still opened MainWindow directly
+OBM_WPF_V004_FRESH_LOCAL_INSTALL_MAINWINDOW_OFFLINE_AND_POST_INSTALL_PAIRING_PHYSICALLY_PROVEN
 ```
 
-PASS verdict:
+Local installation PASS but cloud pairing not completed:
 
 ```text
-OBM_WPF_TWO_PHASE_LOCAL_FIRST_INSTALLATION_AND_POST_INSTALL_PAIRING_PHYSICALLY_PROVEN_READY_FOR_OPERATOR_SCREENSHOT
+OBM_WPF_V004_LOCAL_INSTALL_MAINWINDOW_OFFLINE_PROVEN_BLOCKED_POST_INSTALL_PAIRING
 ```
 
 Narrow blockers only:
 
 ```text
-BLOCKED_WPF_LOCAL_DB_INPUT_CONTRACT
-BLOCKED_WPF_SELF_DATABASE_PROVISIONING
-BLOCKED_WPF_RUNTIME_PROFILE_ATTACHED_MIGRATION
-BLOCKED_WPF_BASELINE_DATABASE_READY_TRANSACTION
-BLOCKED_WPF_APPLICATION_READY_FINALIZATION
-BLOCKED_WPF_LOCAL_FIRST_MAINWINDOW_STARTUP
-BLOCKED_WPF_POST_INSTALL_PAIRING
-BLOCKED_WPF_PHYSICAL_MAINWINDOW_PROOF
+BLOCKED_CANONICAL_V004_DOCUMENT_MISSING_OR_MISMATCHED
+BLOCKED_WPF_LOCAL_DB_CONFIGURATION
+BLOCKED_WPF_DATABASE_SELF_PROVISIONING
+BLOCKED_WPF_RUNTIME_PROFILE_MIGRATION
+BLOCKED_WPF_DATABASE_READY_TRANSACTION
+BLOCKED_WPF_APPLICATION_READY_TRANSACTION
+BLOCKED_WPF_MAINWINDOW_ROUTING
+BLOCKED_WPF_MAINWINDOW_PHYSICAL_PROOF
+BLOCKED_POST_INSTALL_PAIRING
 ```
 
-Do not report PASS while InstallationV0 remains visible instead of the production MainWindow.
+Do not return another generic installation blocker.
+
+## Status locks
+
+Until the physical local MainWindow proof passes:
+
+```text
+OPERATOR_MAINWINDOW_SCREENSHOT_READY=false
+MANUAL_POS1_TEST_READY=false
+CATEGORY_WEIGHT=DEFERRED
+BOOKING_WEIGHT=DEFERRED
+```
+
+After local proof:
+
+```text
+OPERATOR_MAINWINDOW_SCREENSHOT_READY=true
+MANUAL_POS1_TEST_READY=false
+```
 
 ## Required artifact and report
 
-Preserve all previous artifacts. Create a new versioned private artifact under:
+Preserve prior artifacts unchanged. Create:
 
 ```text
-E:\Project2026\RecoveryReports\WpfTwoPhaseLocalFirstInstallationV001
+E:\Project2026\RecoveryReports\WpfCanonicalV004FreshInstallationV001
 ```
 
-Include at minimum:
+At minimum include:
 
 ```text
 PRIVATE_HANDOFF.md
-DOCS_READ.md
-BEFORE_ARCHITECTURE.md
-AFTER_ARCHITECTURE.md
-LOCAL_DB_INPUT_CONTRACT.md
-PROTECTED_DB_SETTINGS_PROOF.md
-ATTACHED_MIGRATION_PROOF.md
-SELF_DATABASE_CREATION_PROOF.md
-TRANSACTION_A_DATABASE_READY.md
-TRANSACTION_B_APPLICATION_READY.md
-STARTUP_ROUTING_PROOF.md
-NO_PAIRING_LOCAL_MAINWINDOW_PROOF.md
+CANONICAL_V004_VERIFICATION.md
+PROMPT125_HANDOFF_REMOVAL.md
+LOCAL_DB_CONFIGURATION.md
+RUNTIME_PROFILE_SCHEMA.md
+MIGRATION_PROOF.md
+TRANSACTION_A_PROOF.md
+TRANSACTION_B_PROOF.md
+STARTUP_ROUTING.md
+DESTRUCTIVE_PATH_GUARD.md
+FRESH_DB_ABSENCE_AND_CREATION.md
+MAINWINDOW_60_SECOND_PROOF.md
+SECOND_THIRD_LAUNCH_PROOF.md
 POST_INSTALL_PAIRING_PROOF.md
-API_OFFLINE_RESTART_PROOF.md
-DESTRUCTIVE_PATH_GUARDS.md
 FOCUSED_TEST_OUTPUT.txt
-WPF_BUILD_OUTPUT.txt
+BUILD_OUTPUT.txt
 UNIFIED_DIFF.patch
 SHA256SUMS.txt
 AGGREGATE_SHA256.txt
@@ -630,4 +561,4 @@ Create and push:
 report/report126.md
 ```
 
-The report must state exact physical outcomes and must not expose passwords, tokens, full connection strings, or private identity values.
+The public report must state exact physical facts and must not expose passwords, tokens, complete connection strings, or private identities.
