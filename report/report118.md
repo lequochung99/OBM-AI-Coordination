@@ -2,77 +2,106 @@
 
 ## Verdict
 
-BLOCKED_WPF_PHASE1_PROTECTED_STATE.
+BLOCKED_WPF_REFRESH_RESUME.
 
-The normal WPF Runtime Development launch was proven to use the runtime path with `SPACEPOS_INSTALLATION_MODULE` unset, but the current local state is not valid installed-local state. WPF opened controlled InstallationV0 recovery, not MainWindow.
+The ApiServer Visual Studio startup failure is fixed: full API no longer depends on .NET User Secrets, starts from the protected machine-local runtime source, and aligns with WPF on the canonical full API endpoint. WPF still cannot open MainWindow because the retained bootstrap credential exists and decrypts, but the full API rejects it at protected hello with `WPF_HELLO_HTTP_401`; the current PlatformAppV0 installation contract has no refresh-token field/path.
 
-## Prompt And Artifact Verification
+## API Diagnosis And Config
 
-- Coordination prompt: `prompt/prompt118.md`
-- Coordination base commit: `b974e92c537c45993f1a85a69de2e62b6e9f58ed`
-- Prompt117 artifact aggregate verified: `257afc02890a0b560e0c50d60d8f51a715b8203400f31d6f13e7e08653973395`
-- Prompt118 private artifact version: `WpfCanonicalInstalledLocalStartupV001`
-- Prompt118 private artifact aggregate SHA-256: `6835f4d0f2d4d51e273f8f1a850c87b37c07da704b4078d2e2544ae848b72405`
+- DB-credential-vs-WpfJwt diagnosis confirmed: yes
+- Operator ApiServer screenshot reproduced: yes
+- Exact ApiServer startup guard class/method/line: `Program.<Main>$`, `Program.cs:103` before fix
+- ApiServer UserSecretsId before/after: present / removed
+- Runtime AddUserSecrets/read path count before/after: `2 / 0`
+- ApiServer User Secrets DB key count before/after: `ConnectionStrings:PostgreSqlConnection` absent before / no active user-secret DB read after
+- ApiServer active user-secret key reads after task: `0`
+- Canonical protected runtime source name only: `OBM Platform env.production`
+- Full API required secret keys classified: yes
+- Visual Studio full API noninteractive startup: yes
+- start-api-local full API noninteractive startup: yes
+- Visual Studio/script same protected source: yes
+- FINAL_SHA_RETURNED_BY_CODEX guard triggered after fix: no
 
-## Runtime Identity
+## Endpoint And API Proof
 
-- Latest WPF label observed: `prompt118`
-- Project/executable: `4POS/NailSalonNet8/NailSalonNet8.csproj`, `NailSalonNet8.exe`
-- Normal startup profile: `OBM-POS Runtime Development`
-- Installation module env var: unset during physical launch
-- Resolved ProductRoot: `E:\Project2026\_dev\WpfInstallationV0Phase1\WpfProductRoot`
-- ProductRoot classification: source-approved Development root, but its local state is incomplete/recoverable rather than installed-local valid
-- Runtime profile uses installation-test root before correction: no, the same root is currently source-approved for Development
-- Runtime profile uses installation-test root after correction: no ProductRoot profile change was made
+- Canonical full API base URL sanitized: `http://127.0.0.1:7161`
+- Full API Visual Studio URL: `http://127.0.0.1:7161`
+- Full API start script URL: `http://127.0.0.1:7161`
+- WPF normal API base URL matches: yes
+- Phase1-only profile used by normal WPF: no
+- Canonical API DB runtime proof: yes, `obm_api_dev_v0_pg`
+- API health/readiness: yes, `/health`, `/health/ready`, and `/api/platform-v0/readiness` returned `200`
+- API pending migrations count: `0` from accepted `MainApiDevResetExecutionV001` proof
+- Full grouped API routes loaded: yes, full host started
+- Platform/bootstrap routes required by WPF loaded: yes
 
-## Installed-Local Eligibility
+## WPF Token State
 
-- Canonical WPF DB proof: yes, `MainWpfDevResetExecutionV002` proves EF migrations current and grouped schema physically present
-- WPF pending migrations count: `0`
-- Required stable baseline present: no
-- Local runtime activation state: absent
-- Phase1 completion state: protected state exists, but protected hello revalidation failed
-- Phase2 completion state: not complete
-- First missing local startup boundary: runtime baseline/activation marker set
-- Remote API/bootstrap reachable: yes during proof
-- Remote protected hello result: `WPF_HELLO_HTTP_401`
-- Current startup routing classification: `R5_PHASE1_STATE_GENUINELY_INCOMPLETE_OR_CORRUPT`
+- Redeem access/bootstrap token returned: yes by current source contract (`WpfJwt`)
+- Redeem refresh token returned: no / not-supported by current PlatformAppV0 contract
+- Durable token persistence proven: yes
+- ProductRoot used at redeem: `E:\Project2026\_dev\WpfInstallationV0Phase1\WpfProductRoot`
+- ProductRoot used at current startup: `E:\Project2026\_dev\WpfInstallationV0Phase1\WpfProductRoot`
+- Same ProductRoot: yes
+- Access-token protected record exists: yes
+- Refresh-token protected record exists: not-supported
+- Checkpoint exists: yes
+- DPAPI access-token read result: success
+- DPAPI refresh-token read result: not-supported
+- Access token expired/rejected: yes, full API protected hello returned `WPF_HELLO_HTTP_401`
+- Refresh token usable: not-supported
+- Refresh path invoked: no
+- Phase1 resume result: failed at `ProtectedHello`
+- WPF token-state classification: `T7_NO_REFRESH_TOKEN_CONTRACT_EXISTS_IN_CURRENT_SOURCE`
+- Primary classification T1-T9: `T7`
+- Proven credential clear/delete call reached: no
+- ApiServer/API failure deletes credential state after fix: no
+- Redeem repeated during task: no
+- New redeem required: yes, because the retained bootstrap WpfJwt is rejected and no refresh-token contract exists
 
-## Physical Startup Result
+## WPF Physical Startup
 
-- MainWindow physically opened: no
-- InstallationV0 opened before MainWindow: yes
-- Observed window title: `OBM InstallationV0 Phase 1/2 - prompt118`
-- Uncontrolled InstallationV0 re-entry remaining: no; recovery is controlled by incomplete state
-- MainWindow API-offline survival duration: not applicable because MainWindow is not currently eligible
-- Second-launch MainWindow proof: not applicable
-- Incomplete-installation recoverable proof: yes
+- WPF reused retained credential without new redeem: yes
+- WPF ProductRoot match proof: yes
+- MainWindow opens directly: no
+- InstallationV0 shown on installed-local launch: yes
+- Physical WPF title observed: `OBM InstallationV0 Phase 1/2 - prompt118`
+- Process crash/exit after fix: no
+- 60-second MainWindow stability: no, MainWindow did not open
+- Second launch without redeem: no, not applicable until MainWindow opens
+- InstallationV0 shown on valid installed-local launch: not proven valid; current retained credential cannot resume
 
-## Work Performed
+## Build / Test Counts
 
-- Startup source/config corrected: yes, prompt label updated and missing Phase2/runtime tables now hydrate as `NotStarted` instead of an unknown hydration failure
-- Phase2 reconciliation/completion performed: no, blocked because Phase1 revalidation did not pass
-- Manual completion marker write used: no
-- TblTenantPosDevice changed: no
+- ApiServer build: errors `0`, warnings `60`
+- ApiServer focused runtime probes: `/health` `200`, `/health/ready` `200`, `/api/platform-v0/readiness` `200`
+- WPF build: errors `0`, warnings `0` from earlier prompt118 proof
+- WPF resume-only runner: Phase1 failed at `ProtectedHello`, no Phase2 execution
+
+## Scope Locks
+
+- Production files changed count and paths: `5` API files: `Program.cs`, `PlatformAppV0Module.cs`, `ApiServer01.csproj`, `start-api-local.ps1`, `Properties/launchSettings.json`
+- API DB reset/migration/schema changed: no
 - WPF DB reset performed: no
-- API DB mutated: no
-- Category/Booking code changed: no
-
-## Build And Test Counts
-
-- Focused InstallationV0 test result: failed `0`, passed `56`, skipped `0`, total `56`
-- WPF build result: warnings `0`, errors `0`
+- TblTenantPosDevice changed: no
+- Sync/Provider behavior changed: no
+- Category Weight changed: no
+- Booking Weight changed: no
+- Price Weight save semantics changed: no
+- Redeem/token values exposed: no
+- Passwords/connection strings exposed: no
 
 ## Operator Status
 
-- Manual POS1 test ready: false
 - Operator MainWindow screenshot ready: false
-- Required next action: re-authorize or recreate Phase1 protected state through the canonical InstallationV0 flow, then run canonical Phase2 completion; do not hand-write completion markers.
+- Manual POS1 test ready: false
+- Required operator-safe next step: use the existing authorized recovery path to obtain a fresh bootstrap credential, or authorize a future task to implement a real refresh-token contract for PlatformAppV0 installation credentials. Do not hand-write completion markers or fabricate token state.
 
-## No-Mutation / No-Secret Confirmation
+## Private Artifact
 
-No passwords, connection strings, raw GUIDs, protected token contents, PINs, or private business rows are included in this public report. No production/customer/reference databases were mutated by prompt118.
+- Private artifact version: `WpfCanonicalInstalledLocalStartupV001`
+- Private artifact aggregate SHA-256: `fa9ec103ee8f733f99fed9e8aedb301fd775b5c7d08c0bab9d5aa95379ee826c`
 
 ## Coordination Commit
 
-PLACEHOLDER
+FINAL_SHA_RETURNED_BY_CODEX
