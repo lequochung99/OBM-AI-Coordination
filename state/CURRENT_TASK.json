@@ -1,25 +1,25 @@
 {
   "schemaVersion": "1.0",
-  "activeTaskId": "TASK-SETUP-COST-FEE-MERCHANT-SEED-V001",
+  "activeTaskId": "PROMPT305B-PREPARE-CLEAN-V013-LANE",
   "status": "IMPLEMENTED_REPORT_READY",
-  "promptPath": "prompt/prompt144.md",
-  "taskPacketPath": "tasks/active/TASK-SETUP-COST-FEE-MERCHANT-SEED-V001/TASK.md",
-  "reportPath": "report/report144.md",
-  "riskLevel": "L2_LOCAL_SEED_WITH_POSSIBLE_SYNC_CONTRACT",
+  "promptPath": null,
+  "taskPacketPath": "tasks/active/CURRENT.md",
+  "reportPath": "E:/Project2026/RecoveryReports/V013/Prompt305B_PrepareCleanV013Lane/V001/PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md",
+  "riskLevel": "L2_LOCAL_DB_LANE_PREP",
   "taskType": "INVESTIGATE_THEN_IMPLEMENT",
   "recommendedExecutor": "Cursor",
   "recommendedReviewer": "ChatGPT",
   "manualUiOwner": "OPERATOR",
   "requiredContext": [
-    "context/database/TblSetupCostAndFeeMerchant/CURRENT.md",
+    "context/database/V013Lane/CURRENT.md",
+    "context/database/V013Lane/V001/DB_CONTEXT.md",
     "context/database/TblSetupCostAndFeeMerchant/V001/DB_CONTEXT.md",
-    "graphify/wpf/current/queries/SetupCostFeeMerchant/SYMBOL_SUMMARY.md",
-    "graphify/wpf/current/queries/SetupCostFeeMerchant/SEED_PATH.md",
+    "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md",
     "graphify/wpf/current/queries/SetupCostFeeMerchant/SYNC_PATH.md"
   ],
   "requiredInvestigations": [],
-  "graphManifestPath": "graphify/wpf/current/queries/SetupCostFeeMerchant/SYMBOL_SUMMARY.md",
-  "updatedAt": "2026-08-06T16:30:00-04:00",
+  "graphManifestPath": "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md",
+  "updatedAt": "2026-08-06T17:35:00-04:00",
   "updatedBy": "Cursor",
-  "notes": "PASS WPF_SETUP_COST_FEE_MERCHANT_CANONICAL_INITIAL_SEED_PASS. Canonical spelling Fee. Source DB untouched. Reviewer: ChatGPT. UI acceptance: Operator."
+  "notes": "PASS V013_CLEAN_LANE_PREP_PASS. Strategy A clean migrate+CostFee flush. V012 untouched. Source still local-only (no origin)."
 }

@@ -31,19 +31,19 @@ The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains 
 
 ## Current task
 
-`TASK-SETUP-COST-FEE-MERCHANT-SEED-V001` — **IMPLEMENTED_REPORT_READY**
+`PROMPT305B — Prepare Clean V013 WPF/API Lane` — **IMPLEMENTED_REPORT_READY**
 
-Task packet:
+Lane:
 
-`tasks/active/TASK-SETUP-COST-FEE-MERCHANT-SEED-V001/TASK.md`
-
-Report:
-
-`report/report144.md`
+- WPF DB: `obm_pos_dev_v013_pg`
+- API DB: `obm_api_dev_v013_pg`
 
 DB context:
 
-`context/database/TblSetupCostAndFeeMerchant/V001/DB_CONTEXT.md`
+`context/database/V013Lane/CURRENT.md`
 
-Verdict: `WPF_SETUP_COST_FEE_MERCHANT_CANONICAL_INITIAL_SEED_PASS`. ChatGPT review next; operator owns UI acceptance.
+Report:
 
+`E:\Project2026\RecoveryReports\V013\Prompt305B_PrepareCleanV013Lane\V001\PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md`
+
+Verdict: `V013_CLEAN_LANE_PREP_PASS`. Operator owns UI acceptance. Next: full InstallationV0 baseline seed/drain on V013 (recommended PROMPT305C).
