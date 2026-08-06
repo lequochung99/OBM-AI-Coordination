@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "activeTaskId": null,
+  "status": "IDLE",
+  "promptPath": null,
+  "taskPacketPath": null,
+  "reportPath": null,
+  "riskLevel": null,
+  "taskType": null,
+  "recommendedExecutor": null,
+  "recommendedReviewer": null,
+  "manualUiOwner": "OPERATOR",
+  "requiredContext": [],
+  "requiredInvestigations": [],
+  "graphManifestPath": "graphify/CURRENT.md",
+  "updatedAt": "2026-08-06T00:00:00-04:00",
+  "updatedBy": "STRUCTURE_BOOTSTRAP",
+  "notes": "Set all active-task fields together when a numbered task is activated."
+}
