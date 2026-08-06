@@ -1,32 +1,32 @@
 {
   "schemaVersion": "1.0",
-  "activeTaskId": "PROMPT305C-FULL-INSTALLATION-BASELINE-OUTBOX-DRAIN",
+  "activeTaskId": "PROMPT305D-CATALOG-SYNC-BOOKING-CREATE",
   "status": "IMPLEMENTED_REPORT_READY",
-  "promptPath": "prompt/prompt146.md",
+  "promptPath": "prompt/prompt147.md",
   "taskPacketPath": "tasks/active/CURRENT.md",
-  "reportPath": "report/report146.md",
-  "localReportPath": "E:/Project2026/RecoveryReports/V013/Prompt305C_FullInstallationBaselineOutboxDrain/V001/PROMPT305C_FULL_INSTALLATION_BASELINE_OUTBOX_DRAIN_REPORT.md",
-  "localReportSha256": "A4ACEC00403702254DA9999AA1DD8E090D6BAC8744B87F57515B958BD5C7DDAF",
+  "reportPath": "report/report147.md",
+  "localReportPath": "E:/Project2026/RecoveryReports/V013/Prompt305D_CatalogSyncBookingCreate/V001/PROMPT305D_CATALOG_SYNC_BOOKING_CREATE_REPORT.md",
+  "localReportSha256": "BA57D1FB1F0C5AA7CC3D82D7BF3BF739CAC27FAAC97E2F0E0C69311689A98048",
   "localSourceCommits": [
-    "7838685"
+    "b139aba"
   ],
   "localSourceBranch": "recovery/wpf-installation-reset-cursor-v001",
-  "riskLevel": "L2_LOCAL_BASELINE_SEED_OUTBOX_DRAIN",
+  "riskLevel": "L2_CATALOG_SYNC_BOOKING",
   "taskType": "INVESTIGATE_THEN_IMPLEMENT",
   "recommendedExecutor": "Cursor",
   "recommendedReviewer": "ChatGPT",
   "manualUiOwner": "OPERATOR",
   "requiredContext": [
+    "report/report147.md",
+    "prompt/prompt147.md",
     "report/report146.md",
-    "prompt/prompt146.md",
-    "report/report145.md",
     "context/database/V013Lane/CURRENT.md",
-    "context/database/V013Lane/V002/DB_CONTEXT.md",
-    "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md"
+    "context/database/V013Lane/V003/DB_CONTEXT.md",
+    "graphify/wpf/current/queries/V013Lane/PROMPT305D_CATALOG_AND_ENSURE.md"
   ],
   "requiredInvestigations": [],
-  "graphManifestPath": "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md",
-  "updatedAt": "2026-08-06T18:45:00-04:00",
+  "graphManifestPath": "graphify/wpf/current/queries/V013Lane/PROMPT305D_CATALOG_AND_ENSURE.md",
+  "updatedAt": "2026-08-06T19:30:00-04:00",
   "updatedBy": "Cursor",
-  "notes": "PASS V013_FULL_BASELINE_SEED_OUTBOX_DRAIN_PASS. 107/107 outbox Sent=2. API Tenant ensure-missing required for WH FK; WT only. Source local-only."
+  "notes": "PASS V013_CATALOG_SYNC_BOOKING_CREATE_PASS. Catalog 17/152 Sent=2. Booking f53cd35c assignType=2. Ensure helper committed; EntitiesService still WT."
 }

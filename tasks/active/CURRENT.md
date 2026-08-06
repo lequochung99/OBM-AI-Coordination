@@ -1,10 +1,10 @@
-# Active task — PROMPT305C
+# Active task — PROMPT305D
 
 Status: `IMPLEMENTED_REPORT_READY`  
-Verdict: `V013_FULL_BASELINE_SEED_OUTBOX_DRAIN_PASS`
+Verdict: `V013_CATALOG_SYNC_BOOKING_CREATE_PASS`
 
-- Prompt: [`prompt/prompt146.md`](../../prompt/prompt146.md)
-- Report: [`report/report146.md`](../../report/report146.md)
+- Prompt: [`prompt/prompt147.md`](../../prompt/prompt147.md)
+- Report: [`report/report147.md`](../../report/report147.md)
 - DB context: [`context/database/V013Lane/CURRENT.md`](../../context/database/V013Lane/CURRENT.md)
 
-Next recommended: PROMPT305D — V013 service/category catalog + booking create probe; clean-commit API Tenant ensure-missing.
+Next recommended: PROMPT305E — isolate EntitiesService transaction-group commit; day-schedule 400.

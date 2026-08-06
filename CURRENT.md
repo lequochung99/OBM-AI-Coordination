@@ -27,16 +27,16 @@ Graphify -> current code-navigation map
 
 ## Legacy numbered workflow
 
-The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains canonical and must not be renumbered or rewritten. If the local prompt/report sequence is ahead of the remote coordination branch, resolve the current number from the operator/local repository rather than guessing.
+The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains canonical and must not be renumbered or rewritten.
 
 ## Current task
 
-`PROMPT305C — Full InstallationV0 Baseline Seed / Outbox Drain` — **IMPLEMENTED_REPORT_READY**
+`PROMPT305D — V013 Catalog Sync + Booking Create` — **IMPLEMENTED_REPORT_READY**
 
 Legacy prompt/report:
 
-- [`prompt/prompt146.md`](prompt/prompt146.md)
-- [`report/report146.md`](report/report146.md)
+- [`prompt/prompt147.md`](prompt/prompt147.md)
+- [`report/report147.md`](report/report147.md)
 
 Lane:
 
@@ -47,10 +47,10 @@ DB context:
 
 [`context/database/V013Lane/CURRENT.md`](context/database/V013Lane/CURRENT.md)
 
-Local artifact (SHA256 `A4ACEC00403702254DA9999AA1DD8E090D6BAC8744B87F57515B958BD5C7DDAF`):
+Local artifact (SHA256 `BA57D1FB1F0C5AA7CC3D82D7BF3BF739CAC27FAAC97E2F0E0C69311689A98048`):
 
-`E:\Project2026\RecoveryReports\V013\Prompt305C_FullInstallationBaselineOutboxDrain\V001\PROMPT305C_FULL_INSTALLATION_BASELINE_OUTBOX_DRAIN_REPORT.md`
+`E:\Project2026\RecoveryReports\V013\Prompt305D_CatalogSyncBookingCreate\V001\PROMPT305D_CATALOG_SYNC_BOOKING_CREATE_REPORT.md`
 
-Source: local-only @ `7838685` on `recovery/wpf-installation-reset-cursor-v001` (API Tenant ensure-missing in WT, not committed).
+Source local commit: `b139aba` on `recovery/wpf-installation-reset-cursor-v001` (no origin). EntitiesService call sites still mixed WT.
 
-Verdict: `V013_FULL_BASELINE_SEED_OUTBOX_DRAIN_PASS`. Operator owns UI acceptance. Next: V013 catalog/booking probe (recommended PROMPT305D).
+Verdict: `V013_CATALOG_SYNC_BOOKING_CREATE_PASS`. Next: isolate remaining EntitiesService transaction-group commit / day-schedule 400 (PROMPT305E).
