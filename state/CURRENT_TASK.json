@@ -1,34 +1,32 @@
 {
   "schemaVersion": "1.0",
-  "activeTaskId": "PROMPT305B-PREPARE-CLEAN-V013-LANE",
+  "activeTaskId": "PROMPT305C-FULL-INSTALLATION-BASELINE-OUTBOX-DRAIN",
   "status": "IMPLEMENTED_REPORT_READY",
-  "promptPath": "prompt/prompt145.md",
+  "promptPath": "prompt/prompt146.md",
   "taskPacketPath": "tasks/active/CURRENT.md",
-  "reportPath": "report/report145.md",
-  "localReportPath": "E:/Project2026/RecoveryReports/V013/Prompt305B_PrepareCleanV013Lane/V001/PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md",
-  "localReportSha256": "88E644BD6BDDF228ADAFB39BC15C563F8B92A68A9DB3CFE902B36C5591B16B5C",
+  "reportPath": "report/report146.md",
+  "localReportPath": "E:/Project2026/RecoveryReports/V013/Prompt305C_FullInstallationBaselineOutboxDrain/V001/PROMPT305C_FULL_INSTALLATION_BASELINE_OUTBOX_DRAIN_REPORT.md",
+  "localReportSha256": "251B2871731D35A5C51D475200E0909257321C0EC2271A199AEB872909837B0E",
   "localSourceCommits": [
-    "2502a17",
     "7838685"
   ],
   "localSourceBranch": "recovery/wpf-installation-reset-cursor-v001",
-  "riskLevel": "L2_LOCAL_DB_LANE_PREP",
+  "riskLevel": "L2_LOCAL_BASELINE_SEED_OUTBOX_DRAIN",
   "taskType": "INVESTIGATE_THEN_IMPLEMENT",
   "recommendedExecutor": "Cursor",
   "recommendedReviewer": "ChatGPT",
   "manualUiOwner": "OPERATOR",
   "requiredContext": [
+    "report/report146.md",
+    "prompt/prompt146.md",
     "report/report145.md",
-    "prompt/prompt145.md",
     "context/database/V013Lane/CURRENT.md",
-    "context/database/V013Lane/V001/DB_CONTEXT.md",
-    "context/database/TblSetupCostAndFeeMerchant/V001/DB_CONTEXT.md",
-    "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md",
-    "graphify/wpf/current/queries/SetupCostFeeMerchant/SYNC_PATH.md"
+    "context/database/V013Lane/V002/DB_CONTEXT.md",
+    "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md"
   ],
   "requiredInvestigations": [],
   "graphManifestPath": "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md",
-  "updatedAt": "2026-08-06T17:40:00-04:00",
+  "updatedAt": "2026-08-06T18:45:00-04:00",
   "updatedBy": "Cursor",
-  "notes": "PASS V013_CLEAN_LANE_PREP_PASS. Numbered report145 registered and pushed. Prior 6c7821d had DB_CONTEXT/pointers only. Source still local-only (no origin)."
+  "notes": "PASS V013_FULL_BASELINE_SEED_OUTBOX_DRAIN_PASS. 107/107 outbox Sent=2. API Tenant ensure-missing required for WH FK; WT only. Source local-only."
 }

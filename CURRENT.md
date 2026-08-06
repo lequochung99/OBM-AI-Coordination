@@ -31,12 +31,12 @@ The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains 
 
 ## Current task
 
-`PROMPT305B — Prepare Clean V013 WPF/API Lane` — **IMPLEMENTED_REPORT_READY**
+`PROMPT305C — Full InstallationV0 Baseline Seed / Outbox Drain` — **IMPLEMENTED_REPORT_READY**
 
 Legacy prompt/report:
 
-- [`prompt/prompt145.md`](prompt/prompt145.md)
-- [`report/report145.md`](report/report145.md)
+- [`prompt/prompt146.md`](prompt/prompt146.md)
+- [`report/report146.md`](report/report146.md)
 
 Lane:
 
@@ -47,10 +47,10 @@ DB context:
 
 [`context/database/V013Lane/CURRENT.md`](context/database/V013Lane/CURRENT.md)
 
-Local artifact (SHA256 `88E644BD6BDDF228ADAFB39BC15C563F8B92A68A9DB3CFE902B36C5591B16B5C`):
+Local artifact (SHA256 `251B2871731D35A5C51D475200E0909257321C0EC2271A199AEB872909837B0E`):
 
-`E:\Project2026\RecoveryReports\V013\Prompt305B_PrepareCleanV013Lane\V001\PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md`
+`E:\Project2026\RecoveryReports\V013\Prompt305C_FullInstallationBaselineOutboxDrain\V001\PROMPT305C_FULL_INSTALLATION_BASELINE_OUTBOX_DRAIN_REPORT.md`
 
-Local WPF/API source commits (no origin): `2502a17`, `7838685` on `recovery/wpf-installation-reset-cursor-v001`.
+Source: local-only @ `7838685` on `recovery/wpf-installation-reset-cursor-v001` (API Tenant ensure-missing in WT, not committed).
 
-Verdict: `V013_CLEAN_LANE_PREP_PASS`. Operator owns UI acceptance. Next: full InstallationV0 baseline seed/drain on V013 (recommended PROMPT305C).
+Verdict: `V013_FULL_BASELINE_SEED_OUTBOX_DRAIN_PASS`. Operator owns UI acceptance. Next: V013 catalog/booking probe (recommended PROMPT305D).
