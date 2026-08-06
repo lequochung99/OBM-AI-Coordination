@@ -94,5 +94,11 @@ Evidence timestamp: `2026-08-06T17:30:00-04:00` (approx)
 
 ## Report pointer
 
-`E:\Project2026\RecoveryReports\V013\Prompt305B_PrepareCleanV013Lane\V001\PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md`  
+| Kind | Path |
+|---|---|
+| Coordination numbered report | `report/report145.md` |
+| Local RecoveryReports copy | `E:\Project2026\RecoveryReports\V013\Prompt305B_PrepareCleanV013Lane\V001\PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md` |
+| Local report SHA256 | `88E644BD6BDDF228ADAFB39BC15C563F8B92A68A9DB3CFE902B36C5591B16B5C` |
+| Local source commits | `2502a17`, `7838685` on `recovery/wpf-installation-reset-cursor-v001` (no origin) |
+
 Verdict: `V013_CLEAN_LANE_PREP_PASS`

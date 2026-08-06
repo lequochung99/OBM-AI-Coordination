@@ -2,15 +2,24 @@
   "schemaVersion": "1.0",
   "activeTaskId": "PROMPT305B-PREPARE-CLEAN-V013-LANE",
   "status": "IMPLEMENTED_REPORT_READY",
-  "promptPath": null,
+  "promptPath": "prompt/prompt145.md",
   "taskPacketPath": "tasks/active/CURRENT.md",
-  "reportPath": "E:/Project2026/RecoveryReports/V013/Prompt305B_PrepareCleanV013Lane/V001/PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md",
+  "reportPath": "report/report145.md",
+  "localReportPath": "E:/Project2026/RecoveryReports/V013/Prompt305B_PrepareCleanV013Lane/V001/PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md",
+  "localReportSha256": "88E644BD6BDDF228ADAFB39BC15C563F8B92A68A9DB3CFE902B36C5591B16B5C",
+  "localSourceCommits": [
+    "2502a17",
+    "7838685"
+  ],
+  "localSourceBranch": "recovery/wpf-installation-reset-cursor-v001",
   "riskLevel": "L2_LOCAL_DB_LANE_PREP",
   "taskType": "INVESTIGATE_THEN_IMPLEMENT",
   "recommendedExecutor": "Cursor",
   "recommendedReviewer": "ChatGPT",
   "manualUiOwner": "OPERATOR",
   "requiredContext": [
+    "report/report145.md",
+    "prompt/prompt145.md",
     "context/database/V013Lane/CURRENT.md",
     "context/database/V013Lane/V001/DB_CONTEXT.md",
     "context/database/TblSetupCostAndFeeMerchant/V001/DB_CONTEXT.md",
@@ -19,7 +28,7 @@
   ],
   "requiredInvestigations": [],
   "graphManifestPath": "graphify/wpf/current/queries/V013Lane/SYMBOL_SUMMARY.md",
-  "updatedAt": "2026-08-06T17:35:00-04:00",
+  "updatedAt": "2026-08-06T17:40:00-04:00",
   "updatedBy": "Cursor",
-  "notes": "PASS V013_CLEAN_LANE_PREP_PASS. Strategy A clean migrate+CostFee flush. V012 untouched. Source still local-only (no origin)."
+  "notes": "PASS V013_CLEAN_LANE_PREP_PASS. Numbered report145 registered and pushed. Prior 6c7821d had DB_CONTEXT/pointers only. Source still local-only (no origin)."
 }

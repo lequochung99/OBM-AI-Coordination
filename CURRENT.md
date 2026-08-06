@@ -33,6 +33,11 @@ The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains 
 
 `PROMPT305B — Prepare Clean V013 WPF/API Lane` — **IMPLEMENTED_REPORT_READY**
 
+Legacy prompt/report:
+
+- [`prompt/prompt145.md`](prompt/prompt145.md)
+- [`report/report145.md`](report/report145.md)
+
 Lane:
 
 - WPF DB: `obm_pos_dev_v013_pg`
@@ -40,10 +45,12 @@ Lane:
 
 DB context:
 
-`context/database/V013Lane/CURRENT.md`
+[`context/database/V013Lane/CURRENT.md`](context/database/V013Lane/CURRENT.md)
 
-Report:
+Local artifact (SHA256 `88E644BD6BDDF228ADAFB39BC15C563F8B92A68A9DB3CFE902B36C5591B16B5C`):
 
 `E:\Project2026\RecoveryReports\V013\Prompt305B_PrepareCleanV013Lane\V001\PROMPT305B_PREPARE_CLEAN_V013_LANE_REPORT.md`
+
+Local WPF/API source commits (no origin): `2502a17`, `7838685` on `recovery/wpf-installation-reset-cursor-v001`.
 
 Verdict: `V013_CLEAN_LANE_PREP_PASS`. Operator owns UI acceptance. Next: full InstallationV0 baseline seed/drain on V013 (recommended PROMPT305C).
