@@ -16,8 +16,10 @@ Graphify -> current code-navigation map
 
 - Constitution: [`constitution/CURRENT.md`](constitution/CURRENT.md)
 - Active task state: [`state/CURRENT_TASK.json`](state/CURRENT_TASK.json)
+- Active task pointer: [`tasks/active/CURRENT.md`](tasks/active/CURRENT.md)
 - Agent status: [`state/AGENT_STATUS.md`](state/AGENT_STATUS.md)
 - Module context: [`context/modules/README.md`](context/modules/README.md)
+- Database context: [`context/database/README.md`](context/database/README.md)
 - Investigation index: [`context/investigations/INDEX.md`](context/investigations/INDEX.md)
 - Graphify pointer: [`graphify/CURRENT.md`](graphify/CURRENT.md)
 - Architecture decisions: [`decisions/INDEX.md`](decisions/INDEX.md)
@@ -25,8 +27,14 @@ Graphify -> current code-navigation map
 
 ## Legacy numbered workflow
 
-The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains canonical and must not be renumbered or rewritten. New task packets may reference those numbered artifacts rather than duplicating their content.
+The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains canonical and must not be renumbered or rewritten. If the local prompt/report sequence is ahead of the remote coordination branch, resolve the current number from the operator/local repository rather than guessing.
 
 ## Current task
 
-No active task is registered by this structural bootstrap. The next coordinator must update `state/CURRENT_TASK.json` atomically when activating a task.
+`TASK-SETUP-COST-FEE-MERCHANT-SEED-V001`
+
+Task packet:
+
+`tasks/active/TASK-SETUP-COST-FEE-MERCHANT-SEED-V001/TASK.md`
+
+Cursor should use Graphify first, then targeted source/DB verification, implement the canonical initial seed from safe non-secret values in read-only `enailsalon_phasee1_pos1_pg`, and persist reusable DB context before closing the task.
