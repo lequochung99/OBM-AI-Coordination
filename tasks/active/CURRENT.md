@@ -1,10 +1,10 @@
-# Active task — PROMPT305D
+# Active task — PROMPT305E
 
-Status: `IMPLEMENTED_REPORT_READY`  
-Verdict: `V013_CATALOG_SYNC_BOOKING_CREATE_PASS`
+Status: `BLOCKED`  
+Verdict: `BLOCKED_V014_CRITICAL_FIX_UNCOMMITTED`
 
-- Prompt: [`prompt/prompt147.md`](../../prompt/prompt147.md)
-- Report: [`report/report147.md`](../../report/report147.md)
-- DB context: [`context/database/V013Lane/CURRENT.md`](../../context/database/V013Lane/CURRENT.md)
+- Prompt: [`prompt/prompt148.md`](../../prompt/prompt148.md)
+- Report: [`report/report148.md`](../../report/report148.md)
+- DB context: [`context/database/V014Lane/CURRENT.md`](../../context/database/V014Lane/CURRENT.md)
 
-Next recommended: PROMPT305E — isolate EntitiesService transaction-group commit; day-schedule 400.
+Do not start operator manual V014 install until ensure-missing call sites are cleanly committed with the transaction-group path.

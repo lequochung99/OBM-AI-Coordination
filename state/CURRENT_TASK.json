@@ -1,32 +1,31 @@
 {
   "schemaVersion": "1.0",
-  "activeTaskId": "PROMPT305D-CATALOG-SYNC-BOOKING-CREATE",
-  "status": "IMPLEMENTED_REPORT_READY",
-  "promptPath": "prompt/prompt147.md",
+  "activeTaskId": "PROMPT305E-V014-MANUAL-INSTALL-OBSERVATION",
+  "status": "BLOCKED",
+  "promptPath": "prompt/prompt148.md",
   "taskPacketPath": "tasks/active/CURRENT.md",
-  "reportPath": "report/report147.md",
-  "localReportPath": "E:/Project2026/RecoveryReports/V013/Prompt305D_CatalogSyncBookingCreate/V001/PROMPT305D_CATALOG_SYNC_BOOKING_CREATE_REPORT.md",
-  "localReportSha256": "5D24DB9B4538983CF2654DE94228EE36F2EC629B597631DD348D842C60E3D876",
+  "reportPath": "report/report148.md",
+  "localReportPath": "E:/Project2026/RecoveryReports/V014/Prompt305E_ManualInstallObservation/V001/PROMPT305E_V014_MANUAL_INSTALL_OBSERVATION_REPORT.md",
+  "localReportSha256": "E54FFDD84E23C76CB4CE85634AD74315E4E34DC62D879B6DD557BBF2E2E7F31F",
   "localSourceCommits": [
     "b139aba"
   ],
   "localSourceBranch": "recovery/wpf-installation-reset-cursor-v001",
-  "riskLevel": "L2_CATALOG_SYNC_BOOKING",
-  "taskType": "INVESTIGATE_THEN_IMPLEMENT",
+  "riskLevel": "L2_CRITICAL_FIX_UNCOMMITTED",
+  "taskType": "PREPARE_THEN_OBSERVE",
   "recommendedExecutor": "Cursor",
   "recommendedReviewer": "ChatGPT",
   "manualUiOwner": "OPERATOR",
   "requiredContext": [
+    "report/report148.md",
+    "prompt/prompt148.md",
     "report/report147.md",
-    "prompt/prompt147.md",
-    "report/report146.md",
-    "context/database/V013Lane/CURRENT.md",
-    "context/database/V013Lane/V003/DB_CONTEXT.md",
-    "graphify/wpf/current/queries/V013Lane/PROMPT305D_CATALOG_AND_ENSURE.md"
+    "context/database/V014Lane/CURRENT.md",
+    "graphify/wpf/current/queries/V014Lane/PROMPT305E_CRITICAL_FIX_GATE.md"
   ],
   "requiredInvestigations": [],
-  "graphManifestPath": "graphify/wpf/current/queries/V013Lane/PROMPT305D_CATALOG_AND_ENSURE.md",
-  "updatedAt": "2026-08-06T19:30:00-04:00",
+  "graphManifestPath": "graphify/wpf/current/queries/V014Lane/PROMPT305E_CRITICAL_FIX_GATE.md",
+  "updatedAt": "2026-08-06T19:45:00-04:00",
   "updatedBy": "Cursor",
-  "notes": "PASS V013_CATALOG_SYNC_BOOKING_CREATE_PASS. Catalog 17/152 Sent=2. Booking f53cd35c assignType=2. Ensure helper committed; EntitiesService still WT."
+  "notes": "BLOCKED_V014_CRITICAL_FIX_UNCOMMITTED. Helper committed; EntitiesService ProcessTransactionGroup+ensure call sites only in WT (+1835). No V014 DBs created."
 }
