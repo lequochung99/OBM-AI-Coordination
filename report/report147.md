@@ -21,7 +21,7 @@ V013 catalog seeded (17 categories / 152 services) from read-only same-tenant V0
 ## Source / coordination
 
 - Source commit: `b139aba` (local-only)
-- Local report SHA256: `BA57D1FB1F0C5AA7CC3D82D7BF3BF739CAC27FAAC97E2F0E0C69311689A98048`
+- Local report SHA256: `5D24DB9B4538983CF2654DE94228EE36F2EC629B597631DD348D842C60E3D876`
 
 ## Next
 
