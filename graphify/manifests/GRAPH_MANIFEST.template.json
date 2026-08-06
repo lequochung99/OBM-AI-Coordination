@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "graphId": "OBM-GRAPH-V001",
+  "status": "DRAFT",
+  "generatedAt": null,
+  "generatedBy": "Graphify",
+  "updateMode": "incremental",
+  "previousGraphId": null,
+  "sourceRepositories": [
+    {
+      "component": "WPF",
+      "repositoryOrRoot": "E:\\Project2026\\4POS\\NailSalonNet8",
+      "commitSha": null
+    },
+    {
+      "component": "ApiServer",
+      "repositoryOrRoot": "E:\\Project2026\\1ApiServer\\ApiServer01",
+      "commitSha": null
+    },
+    {
+      "component": "PlatformAppV0",
+      "repositoryOrRoot": "E:\\Project2026\\PlatformAppV0",
+      "commitSha": null
+    },
+    {
+      "component": "WebsiteBooking",
+      "repositoryOrRoot": "E:\\Project2026\\6Website",
+      "commitSha": null
+    }
+  ],
+  "scope": [],
+  "changedModules": [],
+  "publicSafeArtifacts": [],
+  "privateArtifacts": [
+    {
+      "artifactType": "raw-graph",
+      "locationReference": null,
+      "sha256": null,
+      "reasonPrivate": "May contain proprietary source details or sensitive paths"
+    }
+  ],
+  "knownLimitations": [],
+  "validatedBy": null,
+  "validatedAt": null
+}
