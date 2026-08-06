@@ -4,7 +4,7 @@ Register every reusable investigation here. Do not rely on chat history as the o
 
 | ID | Module | Status | Source commits | Summary | Superseded by |
 |---|---|---|---|---|---|
-| — | — | — | — | No investigations registered by bootstrap | — |
+| DBCTX-TblSetupCostAndFeeMerchant-V001 | TblSetupCostAndFeeMerchant | VERIFIED | WPF `d7bd0177` | Fee spelling canonical; seeded ClientFeeInPercent=2 via BaselineSeeder + InitialSeedBootstrapOutbox; Free is mapper-name-only | — |
 
 ## Folder convention
 

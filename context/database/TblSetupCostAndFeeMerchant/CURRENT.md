@@ -1,15 +1,14 @@
 # TblSetupCostAndFeeMerchant — Current DB Context
 
-Status: `UNVERIFIED_PENDING_TASK`
+Status: `VERIFIED`
 
-The operator reported that this setup table currently has no seeded data and therefore no real configured values. The next active task must resolve the exact canonical spelling in code/schema because historical code may use `TblSetupCostAndFreeMerchant` rather than `TblSetupCostAndFeeMerchant`.
+Canonical verified context:
 
-Do not treat either spelling as authoritative until Graphify + source + physical PostgreSQL inspection agree.
+[`V001/DB_CONTEXT.md`](V001/DB_CONTEXT.md)
 
-Planned verified context:
+Spelling resolution: canonical code/schema name is `TblSetupCostAndFeeMerchant` (**Fee**).  
+`TblSetupCostAndFreeMerchant` exists only as historical mapper method naming.
 
-`context/database/TblSetupCostAndFeeMerchant/V001/DB_CONTEXT.md`
-
-Active investigation/implementation task:
+Active task that produced V001:
 
 `tasks/active/TASK-SETUP-COST-FEE-MERCHANT-SEED-V001/TASK.md`

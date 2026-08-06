@@ -31,10 +31,19 @@ The existing `prompt/promptXXX.md` and `report/reportXXX.md` convention remains 
 
 ## Current task
 
-`TASK-SETUP-COST-FEE-MERCHANT-SEED-V001`
+`TASK-SETUP-COST-FEE-MERCHANT-SEED-V001` — **IMPLEMENTED_REPORT_READY**
 
 Task packet:
 
 `tasks/active/TASK-SETUP-COST-FEE-MERCHANT-SEED-V001/TASK.md`
 
-Cursor should use Graphify first, then targeted source/DB verification, implement the canonical initial seed from safe non-secret values in read-only `enailsalon_phasee1_pos1_pg`, and persist reusable DB context before closing the task.
+Report:
+
+`report/report144.md`
+
+DB context:
+
+`context/database/TblSetupCostAndFeeMerchant/V001/DB_CONTEXT.md`
+
+Verdict: `WPF_SETUP_COST_FEE_MERCHANT_CANONICAL_INITIAL_SEED_PASS`. ChatGPT review next; operator owns UI acceptance.
+

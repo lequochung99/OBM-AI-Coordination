@@ -1,15 +1,15 @@
 # Current Graphify Snapshot
 
-Status: `NOT_REGISTERED`
+Status: `TASK_SCOPED_QUERIES_PRESENT`
 
-No Graphify scan is registered by this structural bootstrap.
+No full public Graphify manifest is registered yet.
 
-When the first public-safe scan is prepared:
+Sanitized WPF query artifacts for the active/completed seed task:
 
-1. create `graphify/manifests/V001/GRAPH_MANIFEST.json`;
-2. create only the necessary sanitized summaries under `graphify/summaries/`;
-3. add private raw-artifact checksums/references when applicable;
-4. replace this file with a pointer to the accepted manifest;
-5. update `state/CURRENT_TASK.json` only when an active task depends on that graph.
+`graphify/wpf/current/queries/SetupCostFeeMerchant/`
 
-Do not point this file to unreviewed generated output.
+- `SYMBOL_SUMMARY.md`
+- `SEED_PATH.md`
+- `SYNC_PATH.md`
+
+Private raw graph remains under the WPF product tree (`NailSalonNet8/graphify-out/`, ~23MB). Do not commit raw graph/source embeddings into this public coordination repo.
