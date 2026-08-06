@@ -1,31 +1,32 @@
 {
   "schemaVersion": "1.0",
-  "activeTaskId": "PROMPT305E-V014-MANUAL-INSTALL-OBSERVATION",
-  "status": "BLOCKED",
-  "promptPath": "prompt/prompt148.md",
+  "activeTaskId": "PROMPT305E-FIX-TRANSACTION-GROUP-ISOLATION",
+  "status": "PASS",
+  "promptPath": "prompt/prompt149.md",
   "taskPacketPath": "tasks/active/CURRENT.md",
-  "reportPath": "report/report148.md",
-  "localReportPath": "E:/Project2026/RecoveryReports/V014/Prompt305E_ManualInstallObservation/V001/PROMPT305E_V014_MANUAL_INSTALL_OBSERVATION_REPORT.md",
-  "localReportSha256": "E54FFDD84E23C76CB4CE85634AD74315E4E34DC62D879B6DD557BBF2E2E7F31F",
+  "reportPath": "report/report149.md",
+  "localReportPath": "E:/Project2026/RecoveryReports/V014/Prompt305E_FixTransactionGroupIsolation/V001/PROMPT305E_FIX_TRANSACTION_GROUP_ISOLATION_REPORT.md",
+  "localReportSha256": "82C15F7602E449488FC5F140841A64EF2A91C0D5604A96E5132DC27B611DA02A",
   "localSourceCommits": [
-    "b139aba"
+    "b139aba",
+    "54b408b"
   ],
   "localSourceBranch": "recovery/wpf-installation-reset-cursor-v001",
-  "riskLevel": "L2_CRITICAL_FIX_UNCOMMITTED",
-  "taskType": "PREPARE_THEN_OBSERVE",
+  "riskLevel": "L1_RESOLVED",
+  "taskType": "SOURCE_ISOLATION_COMMIT_GATE",
   "recommendedExecutor": "Cursor",
   "recommendedReviewer": "ChatGPT",
   "manualUiOwner": "OPERATOR",
   "requiredContext": [
+    "report/report149.md",
+    "prompt/prompt149.md",
     "report/report148.md",
-    "prompt/prompt148.md",
-    "report/report147.md",
     "context/database/V014Lane/CURRENT.md",
-    "graphify/wpf/current/queries/V014Lane/PROMPT305E_CRITICAL_FIX_GATE.md"
+    "graphify/wpf/current/queries/V014Lane/PROMPT305E_FIX_TRANSACTION_GROUP_ISOLATION.md"
   ],
   "requiredInvestigations": [],
-  "graphManifestPath": "graphify/wpf/current/queries/V014Lane/PROMPT305E_CRITICAL_FIX_GATE.md",
-  "updatedAt": "2026-08-06T19:45:00-04:00",
+  "graphManifestPath": "graphify/wpf/current/queries/V014Lane/PROMPT305E_FIX_TRANSACTION_GROUP_ISOLATION.md",
+  "updatedAt": "2026-08-06T19:05:00-04:00",
   "updatedBy": "Cursor",
-  "notes": "BLOCKED_V014_CRITICAL_FIX_UNCOMMITTED. Helper committed; EntitiesService ProcessTransactionGroup+ensure call sites only in WT (+1835). No V014 DBs created."
+  "notes": "TRANSACTION_GROUP_SOURCE_ISOLATION_COMMIT_PASS. EntitiesService.TransactionGroup.cs (partial) committed at 54b408b; BLOCKED_V014_CRITICAL_FIX_UNCOMMITTED cleared. Next: retry PROMPT305E V014 lane prep (no V014 DBs created yet)."
 }

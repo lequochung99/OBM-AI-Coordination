@@ -22,17 +22,21 @@ Graphify -> current code-navigation map
 
 ## Current task
 
-`PROMPT305E — V014 Manual Install Observation` — **BLOCKED**
+`PROMPT305E-FIX — Isolate And Commit EntitiesService Transaction-Group Path` — **PASS**
 
 Legacy prompt/report:
 
-- [`prompt/prompt148.md`](prompt/prompt148.md)
-- [`report/report148.md`](report/report148.md)
+- [`prompt/prompt149.md`](prompt/prompt149.md)
+- [`report/report149.md`](report/report149.md)
 
-Verdict: `BLOCKED_V014_CRITICAL_FIX_UNCOMMITTED`
+Verdict: `TRANSACTION_GROUP_SOURCE_ISOLATION_COMMIT_PASS`
 
-Local artifact (SHA256 `E54FFDD84E23C76CB4CE85634AD74315E4E34DC62D879B6DD557BBF2E2E7F31F`):
+Local artifact (SHA256 `82C15F7602E449488FC5F140841A64EF2A91C0D5604A96E5132DC27B611DA02A`):
 
-`E:\Project2026\RecoveryReports\V014\Prompt305E_ManualInstallObservation\V001\PROMPT305E_V014_MANUAL_INSTALL_OBSERVATION_REPORT.md`
+`E:\Project2026\RecoveryReports\V014\Prompt305E_FixTransactionGroupIsolation\V001\PROMPT305E_FIX_TRANSACTION_GROUP_ISOLATION_REPORT.md`
 
-Next: isolate/commit `EntitiesService` transaction-group + ensure-missing call sites, then retry V014 prep for operator manual install.
+Source commit: `54b408b` on `recovery/wpf-installation-reset-cursor-v001` (local-only / no origin).
+
+`BLOCKED_V014_CRITICAL_FIX_UNCOMMITTED` (report148) is cleared. Next: retry
+`PROMPT305E — Prepare V014 Manual WPF Installation Observation Lane` (clean V014 DB/API prep,
+pairing, WPF config, watch scripts, operator pause).
