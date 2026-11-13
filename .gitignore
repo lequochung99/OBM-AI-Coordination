@@ -1,0 +1,38 @@
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
+*.token
+
+# Private evidence and database artifacts
+*.bak
+*.dump
+*.sql.gz
+*.db
+*.sqlite
+*.log
+private/
+private-evidence/
+recovery-artifacts/
+
+# Graphify raw/private outputs
+# Commit only reviewed public-safe manifests, summaries, deltas, and references.
+graphify-out/
+**/graph.json
+**/graph.html
+**/cost.json
+**/.graphify-cache/
+**/graphify-cache/
+**/embeddings/
+
+# Tool/editor transient state
+.vscode/
+.cursor/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
